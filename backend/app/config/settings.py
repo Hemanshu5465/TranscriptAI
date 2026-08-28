@@ -5,7 +5,7 @@ import tempfile
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
@@ -19,8 +19,14 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    # Core
-    database_url: str = "sqlite:///./.data/transcriptai.db"
+    # Core. Reads DATABASE_URL, or falls back to the vars a hosted Postgres
+    # integration injects (Vercel Storage / Neon set POSTGRES_URL et al.).
+    database_url: str = Field(
+        default="sqlite:///./.data/transcriptai.db",
+        validation_alias=AliasChoices(
+            "DATABASE_URL", "POSTGRES_URL", "POSTGRES_URL_NON_POOLING", "POSTGRES_PRISMA_URL"
+        ),
+    )
     jwt_secret: str = "dev-insecure-secret-change-me"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 1440
@@ -121,12 +127,32 @@ def _safe_mkdir(path: Path) -> None:
         pass
 
 
+def _normalize_pg_url(url: str) -> str:
+    """Accept whatever a host injects (``postgres://`` / ``postgresql://``) and
+    make SQLAlchemy use the psycopg 3 driver. Also drop libpq-only query params
+    that psycopg's URL parser rejects (e.g. ``channel_binding``)."""
+    for scheme in ("postgres://", "postgresql://"):
+        if url.startswith(scheme):
+            url = "postgresql+psycopg://" + url[len(scheme) :]
+            break
+    if url.startswith("postgresql+psycopg://") and "?" in url:
+        base, _, query = url.partition("?")
+        kept = [
+            p for p in query.split("&")
+            if p and p.split("=")[0] not in {"channel_binding", "options", "pgbouncer"}
+        ]
+        url = base + ("?" + "&".join(kept) if kept else "")
+    return url
+
+
 @lru_cache
 def get_settings() -> Settings:
     s = Settings()
     if s.is_sqlite:
         s.database_url = _absolutize_sqlite(s.database_url)
         _safe_mkdir(Path(s.database_url[len("sqlite:///") :]).parent)
+    else:
+        s.database_url = _normalize_pg_url(s.database_url)
     _safe_mkdir(s.media_dir)
     return s
 
