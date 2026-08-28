@@ -90,7 +90,7 @@ class YouTubeCaptionsProvider(TranscriptionProvider):
             logger.warning("youtube-transcript-api could not retrieve %s: %s", request.video_id, exc)
             raise ProviderUnavailable(
                 "YouTube declined the transcript request from this network. "
-                "Try again later or enable the audio fallback."
+                "Set SUPADATA_API_KEY (free at supadata.ai) or a proxy to fix this."
             )
         except Exception as exc:  # pragma: no cover - defensive
             logger.exception("Unexpected youtube-transcript-api failure")

@@ -72,6 +72,8 @@ class Settings(BaseSettings):
     # Metadata / cloud STT
     youtube_api_key: str = ""
     deepgram_api_key: str = ""
+    # Hosted transcript API (works from datacenter IPs). Free tier at supadata.ai.
+    supadata_api_key: str = ""
 
     # Rate limits
     rate_limit_default: str = "120/minute"

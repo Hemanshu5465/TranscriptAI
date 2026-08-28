@@ -13,18 +13,20 @@ from app.services.transcription.base import (
 )
 from app.services.transcription.deepgram_provider import DeepgramProvider
 from app.services.transcription.faster_whisper_provider import FasterWhisperProvider
+from app.services.transcription.supadata import SupadataProvider
 from app.services.transcription.youtube_captions import YouTubeCaptionsProvider
 
 logger = logging.getLogger(__name__)
 
 _REGISTRY: dict[str, type[TranscriptionProvider]] = {
+    "supadata": SupadataProvider,
     "youtube_captions": YouTubeCaptionsProvider,
     "faster_whisper": FasterWhisperProvider,
     "deepgram": DeepgramProvider,
 }
 
 # Fallback order when the primary provider yields nothing usable.
-_CHAIN = ["youtube_captions", "faster_whisper", "deepgram"]
+_CHAIN = ["supadata", "youtube_captions", "faster_whisper", "deepgram"]
 
 
 def get_provider(name: str) -> TranscriptionProvider:
@@ -36,6 +38,11 @@ def get_provider(name: str) -> TranscriptionProvider:
 
 def resolve_provider_order() -> list[str]:
     primary = settings.transcription_provider
+    # A Supadata key present + the default provider selected → prefer Supadata.
+    # It fetches captions server-side, so it works from datacenter IPs (Vercel)
+    # where youtube-transcript-api gets blocked.
+    if settings.supadata_api_key and primary == "youtube_captions":
+        primary = "supadata"
     if not settings.transcription_fallback:
         return [primary]
     return [primary, *[p for p in _CHAIN if p != primary]]

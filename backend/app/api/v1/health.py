@@ -29,4 +29,5 @@ def healthz(db: DbSession) -> dict:
         "ai_provider": "claude" if settings.claude_enabled else "rule_based",
         "youtube_data_api": bool(settings.youtube_api_key),
         "youtube_proxy": settings.has_proxy,
+        "supadata": bool(settings.supadata_api_key),
     }
