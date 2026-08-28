@@ -36,3 +36,5 @@ whisper-models/
 
 # Vercel
 .vercel/
+
+.vercel

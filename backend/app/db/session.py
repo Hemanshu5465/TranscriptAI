@@ -9,7 +9,14 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.config.settings import settings
 
-_connect_args = {"check_same_thread": False} if settings.is_sqlite else {}
+if settings.is_sqlite:
+    _connect_args: dict = {"check_same_thread": False}
+    _engine_kwargs: dict = {}
+else:
+    # psycopg 3 + a pgBouncer-fronted pool (Neon/Vercel): disable server-side
+    # prepared statements, and don't hold our own pool on short-lived functions.
+    _connect_args = {"prepare_threshold": None}
+    _engine_kwargs = {"pool_recycle": 300, "pool_size": 5, "max_overflow": 5}
 
 engine = create_engine(
     settings.database_url,
@@ -17,6 +24,7 @@ engine = create_engine(
     future=True,
     pool_pre_ping=True,
     connect_args=_connect_args,
+    **_engine_kwargs,
 )
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False, class_=Session)
