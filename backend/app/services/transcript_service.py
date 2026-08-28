@@ -78,6 +78,11 @@ def create_transcript_job(
     db.refresh(transcript)
 
     enqueue_transcript(transcript.id)
+    if settings.job_queue == "inline":
+        # inline mode ran the pipeline synchronously (separate session) — pull the
+        # fresh status/stage so the response reflects it.
+        db.expire(transcript)
+        db.refresh(transcript)
     return transcript
 
 
