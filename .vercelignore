@@ -1,0 +1,21 @@
+# Keep the serverless bundle small. backend/** is force-included by vercel.json
+# (functions.includeFiles); these paths are the parts we don't want shipped.
+backend/.venv
+backend/venv
+backend/.data
+backend/media
+backend/tests
+backend/.pytest_cache
+backend/requirements-lock.txt
+backend/requirements-optional.txt
+backend/Dockerfile
+backend/.dockerignore
+**/__pycache__
+**/*.pyc
+frontend/node_modules
+frontend/dist
+docker
+scripts
+database/seed/*.db
+*.md
+!README.md

@@ -1,0 +1,6 @@
+# Optional: local audio-download + Whisper transcription fallback.
+# Requires ffmpeg on PATH. Wheels may lag on the newest Python releases —
+# if install fails, run the backend without ENABLE_AUDIO_FALLBACK.
+-r requirements.txt
+yt-dlp>=2024.12.0
+faster-whisper>=1.1.0

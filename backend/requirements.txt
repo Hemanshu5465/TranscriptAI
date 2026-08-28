@@ -1,0 +1,36 @@
+# Core runtime — installs cleanly on CPython 3.11–3.14, no C toolchain needed.
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+sqlalchemy>=2.0.36,<2.1
+alembic==1.19.1
+psycopg[binary]==3.3.4
+pydantic>=2.10,<3
+pydantic-settings>=2.6
+python-dotenv>=1.0
+python-multipart>=0.0.12
+email-validator>=2.2
+
+# Auth
+bcrypt>=4.2
+python-jose[cryptography]>=3.3
+
+# HTTP / external
+httpx>=0.28
+youtube-transcript-api==1.2.4
+
+# Background jobs (RQ path is optional at runtime; libs are lightweight)
+redis>=5.2
+rq>=2.0
+
+# Exports
+python-docx>=1.1
+reportlab>=4.2
+
+# Rate limiting
+slowapi>=0.1.9
+
+# AI formatting (Claude path is optional at runtime)
+anthropic>=0.40
+
+# Tests
+pytest>=8.3

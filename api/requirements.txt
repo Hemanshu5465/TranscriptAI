@@ -1,0 +1,19 @@
+# Vercel installs this for the serverless function. Mirrors backend/requirements.txt
+# (minus dev-only + optional packages). Keep in sync with backend/requirements.txt.
+fastapi==0.141.1
+sqlalchemy>=2.0.36,<2.1
+alembic==1.19.1
+psycopg[binary]==3.3.4
+pydantic>=2.10,<3
+pydantic-settings>=2.6
+python-dotenv>=1.0
+python-multipart>=0.0.12
+email-validator>=2.2
+bcrypt>=4.2
+python-jose[cryptography]>=3.3
+httpx>=0.28
+youtube-transcript-api==1.2.4
+python-docx>=1.1
+reportlab>=4.2
+slowapi>=0.1.9
+anthropic>=0.40

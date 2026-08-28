@@ -1,0 +1,56 @@
+# Optional local infrastructure + services.
+# The app also runs without Docker (SQLite + in-process worker) — see the root README.
+#
+#   docker compose -f docker/docker-compose.yml up --build
+#
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: transcriptai
+      POSTGRES_PASSWORD: transcriptai
+      POSTGRES_DB: transcriptai
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U transcriptai"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: { context: ../backend, dockerfile: Dockerfile }
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    environment:
+      DATABASE_URL: postgresql+psycopg://transcriptai:transcriptai@db:5432/transcriptai
+      REDIS_URL: redis://redis:6379/0
+      JOB_QUEUE: redis
+      JWT_SECRET: docker-dev-secret-change-me
+      FRONTEND_ORIGIN: http://localhost:5173
+    ports: ["8000:8000"]
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  worker:
+    build: { context: ../backend, dockerfile: Dockerfile }
+    command: python -m app.workers.rq_worker
+    environment:
+      DATABASE_URL: postgresql+psycopg://transcriptai:transcriptai@db:5432/transcriptai
+      REDIS_URL: redis://redis:6379/0
+      JOB_QUEUE: redis
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+volumes:
+  pgdata:
