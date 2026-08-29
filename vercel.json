@@ -14,8 +14,7 @@
     }
   },
   "rewrites": [
-    { "source": "/api/blob", "destination": "/api/blob" },
-    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/api/((?!blob).*)", "destination": "/api/index" },
     { "source": "/((?!api/|assets/).*)", "destination": "/index.html" }
   ]
 }
