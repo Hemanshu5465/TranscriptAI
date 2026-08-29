@@ -25,10 +25,11 @@ _REGISTRY: dict[str, type[TranscriptionProvider]] = {
     "deepgram": DeepgramProvider,
 }
 
-# Fallback order when the primary provider yields nothing usable.
-_CHAIN = ["supadata", "youtube_captions", "faster_whisper", "deepgram"]
+# Fallback order for a YouTube URL. (Deepgram can't fetch YouTube audio from a
+# datacenter IP, so it's file-only — see _FILE_CAPABLE.)
+_CHAIN = ["supadata", "youtube_captions", "faster_whisper"]
 
-# Providers that can transcribe an arbitrary media URL (not just YouTube).
+# Providers that can transcribe an arbitrary media URL (uploaded files).
 # Deepgram first — URL-based, no size cap on our side, generous free credit.
 _FILE_CAPABLE = ["deepgram", "supadata"]
 
@@ -49,6 +50,8 @@ def resolve_provider_order(source_kind: str = "youtube") -> list[str]:
     # where youtube-transcript-api gets blocked.
     if settings.supadata_api_key and primary == "youtube_captions":
         primary = "supadata"
+    if primary == "deepgram":  # file-only — not usable for a YouTube URL
+        primary = "supadata" if settings.supadata_api_key else "youtube_captions"
     if not settings.transcription_fallback:
         return [primary]
     return [primary, *[p for p in _CHAIN if p != primary]]
