@@ -57,9 +57,14 @@ def resolve_provider_order(source_kind: str = "youtube") -> list[str]:
     return [primary, *[p for p in _CHAIN if p != primary]]
 
 
+# Providers whose failure message is more actionable than the fallbacks'
+# ("YouTube blocked this datacenter IP" is a dead end for the user).
+_PREFERRED_ERROR_FROM = ("supadata", "deepgram")
+
+
 def transcribe(request: TranscriptionRequest) -> TranscriptionResult:
     """Try providers in order; raise the most meaningful error if all fail."""
-    last_error: Exception | None = None
+    errors: dict[str, Exception] = {}
     tried: list[str] = []
 
     for name in resolve_provider_order(request.source_kind):
@@ -71,14 +76,17 @@ def transcribe(request: TranscriptionRequest) -> TranscriptionResult:
             logger.info("Transcribing %s with provider %s", request.video_id, name)
             return provider.transcribe(request)
         except TranscriptSourceNotFound as exc:
-            last_error = exc
+            errors[name] = exc
             logger.info("Provider %s found no source: %s", name, exc)
         except ProviderUnavailable as exc:
-            last_error = exc
+            errors[name] = exc
             logger.warning("Provider %s unavailable: %s", name, exc)
 
-    if last_error is not None:
-        raise last_error
+    for name in _PREFERRED_ERROR_FROM:
+        if name in errors:
+            raise errors[name]
+    if errors:
+        raise next(iter(errors.values()))
     if request.source_kind == "file":
         raise ProviderUnavailable(
             "File transcription is not configured (needs SUPADATA_API_KEY)."

@@ -113,7 +113,8 @@ class SupadataProvider(TranscriptionProvider):
             raise ProviderUnavailable(detail or "This video is restricted.")
         if resp.status_code == 429:
             raise ProviderUnavailable(
-                "Monthly transcript quota reached. Add credits or try again next month."
+                "The transcript service's monthly free limit is used up. It resets "
+                "at the start of next month, or upgrade your plan at supadata.ai."
             )
         raise ProviderUnavailable(_msg(resp) or f"Transcript service error {resp.status_code}.")
 
