@@ -5,20 +5,29 @@ const MAX_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 // Above this, the SDK splits the upload into parallel parts (needed for big files).
 const MULTIPART_THRESHOLD = 20 * 1024 * 1024;
 
-export const ACCEPTED_EXTENSIONS =
-  ".mp4,.webm,.mov,.mkv,.mpeg,.mpg,.mp3,.m4a,.wav,.flac,.ogg,.aac";
+// Formats the transcription provider (Supadata) actually accepts.
+export const ACCEPTED_EXTENSIONS = ".mp4,.webm,.mp3,.m4a,.wav,.flac,.ogg,.oga,.mpeg,.mpg";
+const SUPPORTED_RE = /\.(mp4|webm|mp3|m4a|wav|flac|ogg|oga|mpe?g)$/i;
 
 const EXT_CONTENT_TYPE: Record<string, string> = {
-  mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime", mkv: "video/x-matroska",
-  mpeg: "video/mpeg", mpg: "video/mpeg",
-  mp3: "audio/mpeg", m4a: "audio/mp4", wav: "audio/wav", flac: "audio/flac",
-  ogg: "audio/ogg", aac: "audio/aac",
+  mp4: "video/mp4",
+  webm: "video/webm",
+  mpeg: "video/mpeg",
+  mpg: "video/mpeg",
+  mp3: "audio/mpeg",
+  m4a: "audio/mp4",
+  wav: "audio/wav",
+  flac: "audio/flac",
+  ogg: "audio/ogg",
+  oga: "audio/ogg",
 };
 
+function extOf(name: string): string {
+  return name.split(".").pop()?.toLowerCase() ?? "";
+}
+
 function contentTypeFor(file: File): string {
-  if (file.type) return file.type;
-  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
-  return EXT_CONTENT_TYPE[ext] ?? "application/octet-stream";
+  return EXT_CONTENT_TYPE[extOf(file.name)] ?? file.type ?? "application/octet-stream";
 }
 
 export interface UploadResult {
@@ -28,14 +37,15 @@ export interface UploadResult {
 }
 
 export function validateFile(file: File): string | null {
-  const isMedia =
-    file.type.startsWith("video/") ||
-    file.type.startsWith("audio/") ||
-    /\.(mp4|webm|mov|mkv|mpe?g|mp3|m4a|wav|flac|ogg|aac)$/i.test(file.name);
-  if (!isMedia) return "That doesn't look like a video or audio file.";
+  const ext = extOf(file.name);
+  if (!SUPPORTED_RE.test(file.name)) {
+    if (/\.(mov|mkv|avi|wmv|m4v|3gp|ts)$/i.test(file.name)) {
+      return `${ext.toUpperCase()} files aren't supported. Convert to MP4, WebM, MP3, M4A or WAV first.`;
+    }
+    return "Unsupported file. Use MP4, WebM, MP3, M4A, WAV, FLAC or OGG.";
+  }
   if (file.size > MAX_BYTES) {
-    const gb = (file.size / 1024 / 1024 / 1024).toFixed(2);
-    return `File is ${gb} GB — the limit is 1 GB.`;
+    return `File is ${(file.size / 1024 / 1024 / 1024).toFixed(2)} GB — the limit is 1 GB.`;
   }
   if (file.size === 0) return "That file is empty.";
   return null;

@@ -29,7 +29,8 @@ _REGISTRY: dict[str, type[TranscriptionProvider]] = {
 _CHAIN = ["supadata", "youtube_captions", "faster_whisper", "deepgram"]
 
 # Providers that can transcribe an arbitrary media URL (not just YouTube).
-_FILE_CAPABLE = ["supadata", "deepgram"]
+# Deepgram first — URL-based, no size cap on our side, generous free credit.
+_FILE_CAPABLE = ["deepgram", "supadata"]
 
 
 def get_provider(name: str) -> TranscriptionProvider:

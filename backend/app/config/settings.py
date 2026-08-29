@@ -113,7 +113,7 @@ class Settings(BaseSettings):
 
     @property
     def file_upload_enabled(self) -> bool:
-        return self.blob_configured and bool(self.supadata_api_key)
+        return self.blob_configured and bool(self.supadata_api_key or self.deepgram_api_key)
 
     @property
     def has_proxy(self) -> bool:

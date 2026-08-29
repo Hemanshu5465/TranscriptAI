@@ -42,15 +42,16 @@ class SupadataProvider(TranscriptionProvider):
         if not settings.supadata_api_key:
             raise ProviderUnavailable("SUPADATA_API_KEY is not configured.")
 
+        is_file = request.source_kind == "file"
         headers = {"x-api-key": settings.supadata_api_key}
-        params = {"url": request.canonical_url, "mode": "auto"}
-        if request.preferred_languages:
+        params = {"url": request.canonical_url, "mode": "generate" if is_file else "auto"}
+        if request.preferred_languages and not is_file:
             params["lang"] = request.preferred_languages[0]
 
         try:
             with httpx.Client(timeout=30.0) as client:
                 resp = client.get(f"{_BASE}/transcript", params=params, headers=headers)
-                data = self._handle(resp)
+                data = self._handle(resp, is_file=is_file)
                 if data is None:  # async job
                     job_id = str(resp.json().get("jobId"))
                     data = self._quick_poll(client, job_id, headers)
@@ -76,17 +77,33 @@ class SupadataProvider(TranscriptionProvider):
 
     # --- internals --------------------------------------------------------
 
-    def _handle(self, resp: httpx.Response) -> dict | None:
+    def _handle(self, resp: httpx.Response, *, is_file: bool = False) -> dict | None:
         if resp.status_code == 202:
             return None
         if resp.status_code == 200:
             return resp.json()
+        if resp.status_code == 400:
+            if is_file:
+                raise TranscriptSourceNotFound(
+                    "This file couldn't be transcribed. Use MP4, WebM, MP3, M4A or "
+                    "WAV — MOV/MKV/AVI aren't supported. Max 750 MB / 12 hours."
+                )
+            raise ProviderUnavailable(_msg(resp) or "That URL couldn't be processed.")
+        if resp.status_code == 402:
+            raise ProviderUnavailable(
+                "This exceeds the transcript service's free allowance. "
+                "Try a shorter file or add credits."
+            )
         if resp.status_code in (206, 416):
             raise TranscriptSourceNotFound(
-                "No transcript is available for this video."
+                "No speech was found in this file." if is_file
+                else "No transcript is available for this video."
             )
         if resp.status_code == 404:
-            raise ProviderUnavailable("This video is unavailable or cannot be accessed.")
+            raise ProviderUnavailable(
+                "The uploaded file could not be reached." if is_file
+                else "This video is unavailable or cannot be accessed."
+            )
         if resp.status_code in (401, 403):
             detail = _msg(resp)
             if resp.status_code == 401:
@@ -144,7 +161,10 @@ class SupadataProvider(TranscriptionProvider):
             segments.append(Segment(start=0.0, end=1.0, text=content.strip()))
 
         if not segments:
-            raise TranscriptSourceNotFound("No transcript is available for this video.")
+            raise TranscriptSourceNotFound(
+                "No transcript could be generated — the audio may be silent, "
+                "music-only, or in a format the service can't read."
+            )
 
         return TranscriptionResult(
             segments=segments,

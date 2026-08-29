@@ -8,7 +8,22 @@ import { issueSignedToken } from "@vercel/blob";
 import { handleUploadPresigned } from "@vercel/blob/client";
 
 const MAX_BYTES = 1024 * 1024 * 1024; // 1 GB — keep in sync with backend max_upload_mb
-const ALLOWED = ["video/*", "audio/*", "application/octet-stream"];
+// Only what the transcription provider (Supadata) accepts.
+const ALLOWED = [
+  "video/mp4",
+  "video/webm",
+  "video/mpeg",
+  "audio/mpeg",
+  "audio/mp4",
+  "audio/x-m4a",
+  "audio/wav",
+  "audio/x-wav",
+  "audio/wave",
+  "audio/flac",
+  "audio/x-flac",
+  "audio/ogg",
+  "application/ogg",
+];
 
 export default async function handler(reqOrRequest, maybeRes) {
   const isNode = maybeRes && typeof maybeRes.end === "function";

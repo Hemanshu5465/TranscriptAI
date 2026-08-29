@@ -22,7 +22,12 @@ describe("validateFile", () => {
   });
 
   it("rejects a non-media file", () => {
-    expect(validateFile(fakeFile("notes.pdf", "application/pdf", 1))).toMatch(/video or audio/i);
+    expect(validateFile(fakeFile("notes.pdf", "application/pdf", 1))).toMatch(/unsupported/i);
+  });
+
+  it("rejects MOV / MKV with a convert hint", () => {
+    expect(validateFile(fakeFile("clip.mov", "video/quicktime", 10))).toMatch(/convert/i);
+    expect(validateFile(fakeFile("clip.mkv", "video/x-matroska", 10))).toMatch(/convert/i);
   });
 
   it(`rejects files over ${MAX_UPLOAD_MB} MB`, () => {

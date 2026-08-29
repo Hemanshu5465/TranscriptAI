@@ -48,10 +48,10 @@ export function ProcessingPage() {
           {failed ? (
             <ErrorState
               title="We couldn't generate the transcript"
-              description={job.data?.error ?? "Please try again with another video."}
+              description={job.data?.error ?? "Something went wrong. Please try again."}
               action={
                 <Button variant="secondary" size="sm" onClick={() => navigate("/")}>
-                  Try another video
+                  Start over
                 </Button>
               }
             />

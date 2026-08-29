@@ -30,6 +30,7 @@ def healthz(db: DbSession) -> dict:
         "youtube_data_api": bool(settings.youtube_api_key),
         "youtube_proxy": settings.has_proxy,
         "supadata": bool(settings.supadata_api_key),
+        "deepgram": bool(settings.deepgram_api_key),
         "blob": settings.blob_configured,
         "file_upload": settings.file_upload_enabled,
         "max_upload_mb": settings.max_upload_mb,
