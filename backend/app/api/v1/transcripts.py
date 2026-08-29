@@ -21,8 +21,10 @@ from app.services.export_service import SUPPORTED_FORMATS, export
 from app.services.transcript_service import (
     apply_edit,
     assert_can_access,
+    assert_can_delete,
     build_export_bundle,
     create_transcript_job,
+    delete_transcript,
     finalize_if_pending,
     get_transcript_or_404,
     serialize_detail,
@@ -138,6 +140,13 @@ def update_transcript(
     apply_edit(db, tr, payload.segments, user)
     db.refresh(tr)
     return serialize_detail(db, tr)
+
+
+@router.delete("/{transcript_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_transcript(transcript_id: str, db: DbSession, user: OptionalUser) -> None:
+    tr = get_transcript_or_404(db, transcript_id)
+    assert_can_delete(tr, user)
+    delete_transcript(db, tr)
 
 
 @router.get("/{transcript_id}/export")

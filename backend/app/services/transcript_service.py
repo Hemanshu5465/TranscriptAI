@@ -191,6 +191,40 @@ def assert_can_access(tr: Transcript, user: User | None) -> None:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "You don't have access to this transcript.")
 
 
+def assert_can_delete(tr: Transcript, user: User | None) -> None:
+    """Deletion needs the authenticated owner (or an admin)."""
+    if user is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Sign in to delete transcripts.")
+    if tr.owner_id != user.id and not user.is_admin:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "You can't delete this transcript.")
+
+
+def delete_transcript(db: Session, tr: Transcript) -> None:
+    """Delete a transcript (segments/words/edits cascade). If it owns an uploaded
+    file that nothing else uses, drop the Video row and its Blob object too."""
+    video = tr.video
+    remove_video = False
+    if video is not None and video.source_type == "upload":
+        others = db.scalar(
+            select(func.count())
+            .select_from(Transcript)
+            .where(Transcript.video_id == video.id, Transcript.id != tr.id)
+        )
+        remove_video = not others
+
+    blob_url = video.source_url if (remove_video and video) else None
+
+    db.delete(tr)
+    if remove_video:
+        db.delete(video)
+    db.commit()
+
+    if blob_url:
+        from app.services.blob_service import delete_blob
+
+        delete_blob(blob_url)
+
+
 def latest_edit(db: Session, transcript_id: str) -> TranscriptEdit | None:
     return db.scalar(
         select(TranscriptEdit)

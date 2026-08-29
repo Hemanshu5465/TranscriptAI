@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { FileVideo, Mic, Search } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FileVideo, Mic, Search, Trash2 } from "lucide-react";
 import { UrlComposer } from "../components/UrlComposer";
 import { EmptyState, Skeleton } from "../components/States";
 import { useAuth } from "../store/auth";
-import { transcriptApi } from "../lib/api";
+import { transcriptApi, apiErrorMessage } from "../lib/api";
+import { toast } from "../hooks/useToast";
 import { useDebounce } from "../hooks/useDebounce";
 import { compactNumber, humanDuration, languageName, relativeTime } from "../lib/format";
 import { cn } from "../lib/cn";
@@ -21,6 +22,7 @@ const FILTERS = [
 
 export function DashboardPage() {
   const { status } = useAuth();
+  const qc = useQueryClient();
   const [filter, setFilter] = useState("all");
   const [rawQuery, setRawQuery] = useState("");
   const q = useDebounce(rawQuery, 300);
@@ -35,6 +37,15 @@ export function DashboardPage() {
         page_size: 30,
       }),
     enabled: status === "authed",
+  });
+
+  const del = useMutation({
+    mutationFn: (id: string) => transcriptApi.remove(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["transcripts"] });
+      toast.success("Transcript deleted");
+    },
+    onError: (e) => toast.error(apiErrorMessage(e, "Couldn't delete that transcript.")),
   });
 
   if (status === "anon") return <Navigate to="/login" replace />;
@@ -90,45 +101,87 @@ export function DashboardPage() {
           />
         )}
 
-        {list.data?.items.map((t) => <TranscriptCard key={t.id} item={t} />)}
+        {list.data?.items.map((t) => (
+          <TranscriptCard
+            key={t.id}
+            item={t}
+            deleting={del.isPending && del.variables === t.id}
+            onDelete={() => del.mutate(t.id)}
+          />
+        ))}
       </div>
     </div>
   );
 }
 
-function TranscriptCard({ item }: { item: TranscriptListItem }) {
+function TranscriptCard({
+  item,
+  onDelete,
+  deleting,
+}: {
+  item: TranscriptListItem;
+  onDelete: () => void;
+  deleting: boolean;
+}) {
+  const [confirming, setConfirming] = useState(false);
   const thumb = item.thumbnail_url ?? "";
   const isUpload = item.source_type === "upload";
+
   return (
-    <Link
-      to={item.status === "completed" ? `/t/${item.id}` : `/t/${item.id}/processing`}
-      className="group flex items-center gap-4 rounded-2xl border border-line bg-surface p-3 transition-colors hover:border-ink-faint"
-    >
-      <div className="grid aspect-video w-28 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-sunken text-ink-faint sm:w-36">
-        {isUpload ? (
-          <FileVideo className="size-6" />
-        ) : (
-          thumb && <img src={thumb} alt="" className="size-full object-cover" />
-        )}
-      </div>
-      <div className="min-w-0 flex-1">
-        <h3 className="truncate font-display text-[1.02rem]">{item.title ?? "Untitled"}</h3>
-        <p className="mt-0.5 truncate text-sm text-ink-soft">
-          {isUpload ? "Uploaded file" : item.channel ?? "—"}
-        </p>
-        <p className="mt-1.5 flex flex-wrap gap-x-2 text-xs text-ink-faint">
-          <span>{humanDuration(item.duration_seconds)}</span>
-          <span>·</span>
-          <span>{languageName(item.language)}</span>
-          <span>·</span>
-          <span>{compactNumber(item.word_count)} words</span>
-          <span>·</span>
-          <span>{relativeTime(item.created_at)}</span>
-        </p>
-      </div>
-      <span className="shrink-0 pr-2 text-sm text-ink-faint transition-colors group-hover:text-accent">
-        {item.status === "completed" ? "Open →" : item.status}
-      </span>
-    </Link>
+    <div className="group relative flex items-center gap-4 rounded-2xl border border-line bg-surface p-3 transition-colors hover:border-ink-faint">
+      <Link
+        to={item.status === "completed" ? `/t/${item.id}` : `/t/${item.id}/processing`}
+        className="flex min-w-0 flex-1 items-center gap-4"
+      >
+        <div className="grid aspect-video w-28 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-sunken text-ink-faint sm:w-36">
+          {isUpload ? (
+            <FileVideo className="size-6" />
+          ) : (
+            thumb && <img src={thumb} alt="" className="size-full object-cover" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate font-display text-[1.02rem]">{item.title ?? "Untitled"}</h3>
+          <p className="mt-0.5 truncate text-sm text-ink-soft">
+            {isUpload ? "Uploaded file" : item.channel ?? "—"}
+          </p>
+          <p className="mt-1.5 flex flex-wrap gap-x-2 text-xs text-ink-faint">
+            <span>{humanDuration(item.duration_seconds)}</span>
+            <span>·</span>
+            <span>{languageName(item.language)}</span>
+            <span>·</span>
+            <span>{compactNumber(item.word_count)} words</span>
+            <span>·</span>
+            <span>{relativeTime(item.created_at)}</span>
+          </p>
+        </div>
+      </Link>
+
+      {confirming ? (
+        <div className="flex shrink-0 items-center gap-1.5 pr-1">
+          <button
+            onClick={onDelete}
+            disabled={deleting}
+            className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-[var(--color-accent-ink)] disabled:opacity-60"
+          >
+            {deleting ? "Deleting…" : "Delete"}
+          </button>
+          <button
+            onClick={() => setConfirming(false)}
+            className="rounded-full border border-line px-3 py-1 text-xs text-ink-soft hover:text-ink"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setConfirming(true)}
+          aria-label={`Delete transcript "${item.title ?? "Untitled"}"`}
+          className="grid size-8 shrink-0 place-items-center rounded-full text-ink-faint opacity-0 transition-opacity hover:bg-surface-sunken hover:text-accent focus-visible:opacity-100 group-hover:opacity-100"
+        >
+          <Trash2 className="size-4" />
+        </button>
+      )}
+    </div>
   );
 }

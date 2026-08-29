@@ -81,6 +81,11 @@ class Settings(BaseSettings):
     blob_read_write_token: str = ""
     blob_store_id: str = ""
     max_upload_mb: int = 1024
+    # Shared secret so the API can ask api/blob.js to delete an orphaned upload.
+    blob_admin_secret: str = ""
+    # Auto-set by Vercel; used to reach our own /api/blob from the Python function.
+    vercel_project_production_url: str = ""
+    vercel_url: str = ""
 
     # Rate limits
     rate_limit_default: str = "120/minute"
@@ -110,6 +115,15 @@ class Settings(BaseSettings):
     @property
     def blob_configured(self) -> bool:
         return bool(self.blob_read_write_token or self.blob_store_id)
+
+    @property
+    def self_base_url(self) -> str | None:
+        host = self.vercel_project_production_url or self.vercel_url
+        return f"https://{host}" if host else None
+
+    @property
+    def can_delete_blobs(self) -> bool:
+        return bool(self.blob_admin_secret and self.self_base_url)
 
     @property
     def file_upload_enabled(self) -> bool:

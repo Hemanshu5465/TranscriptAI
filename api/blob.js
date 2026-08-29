@@ -4,7 +4,7 @@
 // BLOB_STORE_ID) — no BLOB_READ_WRITE_TOKEN needed. Routed at /api/blob.
 //
 // Handles both invocation styles Vercel may use: Node (req, res) and Web (Request).
-import { issueSignedToken } from "@vercel/blob";
+import { del, issueSignedToken } from "@vercel/blob";
 import { handleUploadPresigned } from "@vercel/blob/client";
 
 const MAX_BYTES = 1024 * 1024 * 1024; // 1 GB — keep in sync with backend max_upload_mb
@@ -41,12 +41,32 @@ export default async function handler(reqOrRequest, maybeRes) {
     return send(isNode, maybeRes, 400, { error: "invalid JSON body" });
   }
 
+  const method = isNode ? reqOrRequest.method : reqOrRequest.method;
+  const headerOf = (name) =>
+    isNode ? reqOrRequest.headers[name] : reqOrRequest.headers.get(name);
+
+  // Internal blob deletion — called by the backend when a transcript that owns
+  // an uploaded file is deleted. Gated by a shared secret.
+  if (method === "DELETE" || body?.action === "delete") {
+    const secret = process.env.BLOB_ADMIN_SECRET;
+    if (!secret || headerOf("x-blob-secret") !== secret) {
+      return send(isNode, maybeRes, 403, { error: "forbidden" });
+    }
+    const urls = body?.urls || (body?.url ? [body.url] : []);
+    try {
+      if (urls.length) await del(urls);
+      return send(isNode, maybeRes, 200, { deleted: urls.length });
+    } catch (error) {
+      return send(isNode, maybeRes, 502, { error: String(error?.message || error) });
+    }
+  }
+
   let webRequest;
   if (isNode) {
     const host = reqOrRequest.headers.host || "localhost";
     const proto = reqOrRequest.headers["x-forwarded-proto"] || "https";
     webRequest = new Request(`${proto}://${host}${reqOrRequest.url || "/api/blob"}`, {
-      method: reqOrRequest.method || "POST",
+      method: method || "POST",
       headers: new Headers(reqOrRequest.headers),
     });
   } else {

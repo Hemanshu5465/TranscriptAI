@@ -87,6 +87,7 @@ export const transcriptApi = {
   ) => api.put<TranscriptDetail>(`/transcripts/${id}`, { segments }).then((r) => r.data),
   list: (params: { page?: number; page_size?: number; q?: string; language?: string; filter?: string }) =>
     api.get<TranscriptListResponse>("/transcripts", { params }).then((r) => r.data),
+  remove: (id: string) => api.delete(`/transcripts/${id}`).then(() => undefined),
   exportUrl: (id: string, format: string, opts?: { timestamps?: boolean; variant?: string }) => {
     const p = new URLSearchParams({ format });
     if (opts?.timestamps === false) p.set("timestamps", "false");
