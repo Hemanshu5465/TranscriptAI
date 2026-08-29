@@ -21,7 +21,9 @@ from app.services.ai import get_formatter
 from app.services.stats_service import compute_stats
 from app.services.transcription import (
     ProviderUnavailable,
+    TranscriptionPending,
     TranscriptionRequest,
+    TranscriptionResult,
     TranscriptSourceNotFound,
     transcribe,
 )
@@ -125,19 +127,35 @@ def _execute(db: Session, tr: Transcript) -> None:
     )
     try:
         result = transcribe(req)
+    except TranscriptionPending as pending:
+        # Long media — provider is still transcribing. Park the job; /status
+        # polling will finalise it (see transcript_service.finalize_if_pending).
+        tr.provider = pending.provider
+        tr.provider_job_id = pending.job_id
+        _set_stage(db, tr, "speech_recognition")
+        logger.info("transcript %s parked on %s job %s", tr.id, pending.provider, pending.job_id)
+        return
     except TranscriptSourceNotFound as exc:
         raise PipelineError(str(exc))
     except ProviderUnavailable as exc:
         raise PipelineError(str(exc))
 
+    finalize_transcription(db, tr, video, result)
+
+
+def finalize_transcription(
+    db: Session, tr: Transcript, video: Video, result: TranscriptionResult
+) -> None:
+    """Stages 5–8: language, segments, formatting, stats, complete. Reused by
+    the inline pipeline and by /status finalisation of a parked provider job."""
     if result.source == "audio_whisper":
         _set_stage(db, tr, "speech_recognition")
 
-    # 5. language
     _set_stage(db, tr, "detect_language")
     tr.language = result.language or tr.language
     tr.language_confidence = result.language_confidence
     tr.provider = result.provider
+    tr.provider_job_id = None
     tr.source = result.source
     tr.has_word_timestamps = result.has_word_timestamps
     tr.has_speaker_labels = result.has_speaker_labels
@@ -145,12 +163,10 @@ def _execute(db: Session, tr: Transcript) -> None:
     db.add_all([tr, video])
     db.commit()
 
-    # 6. build segments (+ raw text)
     _set_stage(db, tr, "build_segments")
     raw_segments: list[ProviderSegment] = result.segments
     tr.raw_text = _raw_text(raw_segments)
 
-    # 7. AI / rule-based formatting
     _set_stage(db, tr, "format_transcript")
     formatter = get_formatter()
     formatted = formatter.format(raw_segments, mode=tr.accuracy_mode, language=tr.language)
@@ -161,7 +177,6 @@ def _execute(db: Session, tr: Transcript) -> None:
     duration = video.duration_seconds or (raw_segments[-1].end if raw_segments else None)
     tr.stats = compute_stats(formatted.segments, formatted.full_text, duration)
 
-    # 8. done
     tr.status = STATUS_COMPLETED
     tr.error_message = None
     _set_stage(db, tr, "complete")

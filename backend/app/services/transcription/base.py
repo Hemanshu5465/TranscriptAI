@@ -17,6 +17,19 @@ class TranscriptSourceNotFound(ProviderUnavailable):
     """No permitted transcript or media source exists for this video."""
 
 
+class TranscriptionPending(Exception):
+    """The provider accepted the job but it is still running (long media).
+
+    The pipeline stores ``job_id`` and finalises later via polling, rather than
+    blocking the request past the serverless time limit.
+    """
+
+    def __init__(self, job_id: str, provider: str = "supadata") -> None:
+        super().__init__(f"{provider} job {job_id} is still processing")
+        self.job_id = job_id
+        self.provider = provider
+
+
 @dataclass
 class Word:
     text: str

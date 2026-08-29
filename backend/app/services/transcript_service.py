@@ -1,6 +1,7 @@
 """Application-service layer for transcripts: creation, serialisation, edits, export."""
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
@@ -26,6 +27,8 @@ from app.services.export_service import (
 from app.services.stats_service import count_words
 from app.utils.youtube_url import parse_youtube_url
 from app.workers import enqueue_transcript
+
+logger = logging.getLogger("app.transcript")
 
 _CONTENT_TYPES = {
     "mp4": "video/mp4", "webm": "video/webm", "mov": "video/quicktime", "mkv": "video/x-matroska",
@@ -123,6 +126,48 @@ def create_transcript_job(
         db.expire(transcript)
         db.refresh(transcript)
     return transcript
+
+
+def finalize_if_pending(db: Session, tr: Transcript) -> None:
+    """If a long provider job is running, poll it once and finalise when ready.
+
+    Called on every /status poll — cheap when there's nothing to do.
+    """
+    from app.models import STATUS_FAILED, STATUS_PROCESSING
+
+    if tr.status != STATUS_PROCESSING or not tr.provider_job_id:
+        return
+
+    from app.services.pipeline import finalize_transcription
+    from app.services.transcription import TranscriptSourceNotFound
+    from app.services.transcription.supadata import SupadataProvider
+
+    try:
+        result = SupadataProvider().check_job(tr.provider_job_id)
+    except TranscriptSourceNotFound as exc:
+        tr.status = STATUS_FAILED
+        tr.error_message = str(exc)
+        tr.provider_job_id = None
+        db.add(tr)
+        db.commit()
+        return
+    except Exception:  # noqa: BLE001 - transient; try again on the next poll
+        logger.exception("job poll failed for transcript %s", tr.id)
+        return
+
+    if result is None:
+        return  # still transcribing
+
+    video = db.get(Video, tr.video_id)
+    try:
+        finalize_transcription(db, tr, video, result)
+    except Exception:  # noqa: BLE001
+        logger.exception("finalisation failed for transcript %s", tr.id)
+        tr.status = STATUS_FAILED
+        tr.error_message = "We couldn't finish the transcript. Please try again."
+        tr.provider_job_id = None
+        db.add(tr)
+        db.commit()
 
 
 def get_transcript_or_404(db: Session, transcript_id: str, *, with_segments: bool = False) -> Transcript:

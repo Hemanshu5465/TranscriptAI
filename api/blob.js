@@ -7,7 +7,7 @@
 import { issueSignedToken } from "@vercel/blob";
 import { handleUploadPresigned } from "@vercel/blob/client";
 
-const MAX_BYTES = 50 * 1024 * 1024; // keep in sync with backend max_upload_mb
+const MAX_BYTES = 1024 * 1024 * 1024; // 1 GB — keep in sync with backend max_upload_mb
 const ALLOWED = ["video/*", "audio/*", "application/octet-stream"];
 
 export default async function handler(reqOrRequest, maybeRes) {

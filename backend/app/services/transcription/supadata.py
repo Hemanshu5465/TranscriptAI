@@ -16,6 +16,7 @@ from app.config.settings import settings
 from app.services.transcription.base import (
     ProviderUnavailable,
     Segment,
+    TranscriptionPending,
     TranscriptionProvider,
     TranscriptionRequest,
     TranscriptionResult,
@@ -25,8 +26,10 @@ from app.services.transcription.base import (
 logger = logging.getLogger(__name__)
 
 _BASE = "https://api.supadata.ai/v1"
-_POLL_TIMEOUT = 50  # seconds — stay under the serverless function limit
-_POLL_INTERVAL = 2.5
+# Short synchronous wait — most jobs finish fast. Longer ones become a pending
+# job the pipeline finalises via /status polling (see transcript_service).
+_QUICK_POLL_ATTEMPTS = 3
+_QUICK_POLL_INTERVAL = 3.0
 
 
 class SupadataProvider(TranscriptionProvider):
@@ -49,12 +52,27 @@ class SupadataProvider(TranscriptionProvider):
                 resp = client.get(f"{_BASE}/transcript", params=params, headers=headers)
                 data = self._handle(resp)
                 if data is None:  # async job
-                    data = self._poll(client, resp.json()["jobId"], headers)
+                    job_id = str(resp.json().get("jobId"))
+                    data = self._quick_poll(client, job_id, headers)
+                    if data is None:
+                        raise TranscriptionPending(job_id, provider=self.name)
         except httpx.HTTPError as exc:
             logger.warning("Supadata request failed: %s", exc)
             raise ProviderUnavailable("The transcript service is unreachable right now.")
 
         return self._to_result(data)
+
+    def check_job(self, job_id: str) -> TranscriptionResult | None:
+        """Poll a pending Supadata job once. None = still running; raises on failure."""
+        headers = {"x-api-key": settings.supadata_api_key}
+        try:
+            with httpx.Client(timeout=30.0) as client:
+                r = client.get(f"{_BASE}/transcript/{job_id}", headers=headers)
+        except httpx.HTTPError as exc:
+            logger.warning("Supadata job poll failed: %s", exc)
+            return None
+        data = self._job_body(r)
+        return self._to_result(data) if data is not None else None
 
     # --- internals --------------------------------------------------------
 
@@ -82,23 +100,30 @@ class SupadataProvider(TranscriptionProvider):
             )
         raise ProviderUnavailable(_msg(resp) or f"Transcript service error {resp.status_code}.")
 
-    def _poll(self, client: httpx.Client, job_id: str, headers: dict) -> dict:
-        deadline = time.monotonic() + _POLL_TIMEOUT
-        while time.monotonic() < deadline:
-            time.sleep(_POLL_INTERVAL)
+    def _quick_poll(self, client: httpx.Client, job_id: str, headers: dict) -> dict | None:
+        for _ in range(_QUICK_POLL_ATTEMPTS):
+            time.sleep(_QUICK_POLL_INTERVAL)
             r = client.get(f"{_BASE}/transcript/{job_id}", headers=headers)
-            if r.status_code != 200:
-                raise ProviderUnavailable(_msg(r) or "Transcript job failed.")
-            body = r.json()
-            status = body.get("status")
-            if status == "completed":
-                # completed job nests the transcript under the same keys
-                return body.get("result") or body
-            if status == "failed":
-                raise TranscriptSourceNotFound(
-                    body.get("error") or "The transcript could not be generated."
-                )
-        raise ProviderUnavailable("The transcript is taking too long. Please try again.")
+            data = self._job_body(r)
+            if data is not None:
+                return data
+        return None  # still running — caller raises TranscriptionPending
+
+    @staticmethod
+    def _job_body(r: httpx.Response) -> dict | None:
+        """Parse a job-poll response. None = still queued/active; raises on failure."""
+        if r.status_code != 200:
+            raise ProviderUnavailable(_msg(r) or "Transcript job failed.")
+        body = r.json()
+        status = body.get("status")
+        if status == "failed":
+            raise TranscriptSourceNotFound(
+                body.get("error") or "The transcript could not be generated."
+            )
+        if status in ("queued", "active"):
+            return None
+        # completed (or no status field on a finished job) → the transcript payload
+        return body.get("result") or body
 
     @staticmethod
     def _to_result(data: dict) -> TranscriptionResult:

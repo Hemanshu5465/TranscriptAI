@@ -4,12 +4,7 @@ import { ArrowRight, Link2, TriangleAlert, Upload } from "lucide-react";
 import { Button } from "./Button";
 import { transcriptApi, apiErrorMessage } from "../lib/api";
 import { isValidYouTubeUrl } from "../lib/youtube";
-import {
-  ACCEPTED_EXTENSIONS,
-  MAX_UPLOAD_MB,
-  uploadTranscriptFile,
-  validateFile,
-} from "../lib/upload";
+import { ACCEPTED_EXTENSIONS, uploadTranscriptFile, validateFile } from "../lib/upload";
 import { toast } from "../hooks/useToast";
 import type { AccuracyMode } from "../lib/types";
 import { cn } from "../lib/cn";
@@ -232,7 +227,7 @@ function UploadForm({ mode, submitting, setSubmitting, navigate }: SharedProps) 
             or drop it here
           </p>
           <p className="text-xs text-ink-faint">
-            MP4, WebM, MP3, M4A, WAV… · up to {MAX_UPLOAD_MB} MB
+            MP4, WebM, MP3, M4A, WAV… · up to 1 GB
           </p>
         </>
       ) : (

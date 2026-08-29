@@ -31,6 +31,8 @@ class Transcript(UUIDMixin, TimestampMixin, Base):
     # Result
     accuracy_mode: Mapped[str] = mapped_column(String(16), default="clean", nullable=False)
     provider: Mapped[str | None] = mapped_column(String(40))
+    # Set while an async provider job is running (finalised via /status polling).
+    provider_job_id: Mapped[str | None] = mapped_column(String(80))
     source: Mapped[str | None] = mapped_column(String(40))  # e.g. "youtube_captions"
     language: Mapped[str | None] = mapped_column(String(16))
     language_confidence: Mapped[float | None] = mapped_column(Float)

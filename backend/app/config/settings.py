@@ -80,7 +80,7 @@ class Settings(BaseSettings):
     # directly via a presigned URL minted by api/blob.js.
     blob_read_write_token: str = ""
     blob_store_id: str = ""
-    max_upload_mb: int = 50
+    max_upload_mb: int = 1024
 
     # Rate limits
     rate_limit_default: str = "120/minute"

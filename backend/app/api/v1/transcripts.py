@@ -23,6 +23,7 @@ from app.services.transcript_service import (
     assert_can_access,
     build_export_bundle,
     create_transcript_job,
+    finalize_if_pending,
     get_transcript_or_404,
     serialize_detail,
     serialize_list_item,
@@ -100,6 +101,7 @@ def list_transcripts(
 def job_status(job_id: str, db: DbSession, user: OptionalUser) -> JobStatusOut:
     tr = get_transcript_or_404(db, job_id)
     assert_can_access(tr, user)
+    finalize_if_pending(db, tr)  # advance a long provider job if it's ready
     return JobStatusOut(
         job_id=tr.id,
         transcript_id=tr.id,
@@ -114,6 +116,9 @@ def job_status(job_id: str, db: DbSession, user: OptionalUser) -> JobStatusOut:
 def get_transcript(transcript_id: str, db: DbSession, user: OptionalUser) -> TranscriptDetailOut:
     tr = get_transcript_or_404(db, transcript_id, with_segments=True)
     assert_can_access(tr, user)
+    if tr.status == "processing" and tr.provider_job_id:
+        finalize_if_pending(db, tr)
+        db.refresh(tr)
     return serialize_detail(db, tr)
 
 

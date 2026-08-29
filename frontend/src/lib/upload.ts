@@ -1,7 +1,9 @@
 import { uploadPresigned } from "@vercel/blob/client";
 
-export const MAX_UPLOAD_MB = 50;
+export const MAX_UPLOAD_MB = 1024; // 1 GB
 const MAX_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
+// Above this, the SDK splits the upload into parallel parts (needed for big files).
+const MULTIPART_THRESHOLD = 20 * 1024 * 1024;
 
 export const ACCEPTED_EXTENSIONS =
   ".mp4,.webm,.mov,.mkv,.mpeg,.mpg,.mp3,.m4a,.wav,.flac,.ogg,.aac";
@@ -32,10 +34,17 @@ export function validateFile(file: File): string | null {
     /\.(mp4|webm|mov|mkv|mpe?g|mp3|m4a|wav|flac|ogg|aac)$/i.test(file.name);
   if (!isMedia) return "That doesn't look like a video or audio file.";
   if (file.size > MAX_BYTES) {
-    return `File is ${(file.size / 1024 / 1024).toFixed(0)} MB — the limit is ${MAX_UPLOAD_MB} MB.`;
+    const gb = (file.size / 1024 / 1024 / 1024).toFixed(2);
+    return `File is ${gb} GB — the limit is 1 GB.`;
   }
   if (file.size === 0) return "That file is empty.";
   return null;
+}
+
+export function humanSize(bytes: number): string {
+  return bytes >= 1024 * 1024 * 1024
+    ? `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`
+    : `${Math.round(bytes / 1024 / 1024)} MB`;
 }
 
 /** Uploads directly from the browser to Vercel Blob; returns its public URL. */
@@ -51,6 +60,7 @@ export async function uploadTranscriptFile(
     access: "public",
     handleUploadUrl: "/api/blob",
     contentType,
+    multipart: file.size > MULTIPART_THRESHOLD,
     onUploadProgress: onProgress
       ? ({ percentage }) => onProgress(Math.round(percentage))
       : undefined,
