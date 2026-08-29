@@ -31,7 +31,7 @@ export in seven formats.
 
 | Area | What you get |
 | --- | --- |
-| **Input** | Paste any `watch?v=`, `youtu.be/`, `/embed/`, `/shorts/`, `/live/` URL. Instant client + server validation with friendly errors. |
+| **Input** | Paste any `watch?v=`, `youtu.be/`, `/embed/`, `/shorts/`, `/live/` URL — **or upload a video/audio file** (up to 1 GB; browser → Vercel Blob → Supadata). Instant client + server validation. |
 | **Pipeline** | Async job with live progress: validate → metadata → retrieve transcript → (speech recognition) → detect language → timestamps → format → done. |
 | **Transcript** | Sentence-level timestamps (clickable → seeks the embedded player), optional word-level timestamps, speaker labels when the provider supplies them. |
 | **Views** | Raw ⇄ Clean toggle; Exact / Clean / Readable accuracy modes; low-confidence word highlighting with per-word confidence + timestamp. |
