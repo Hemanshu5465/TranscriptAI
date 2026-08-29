@@ -1,16 +1,18 @@
-// Vercel function: mints scoped client-upload tokens for Vercel Blob so the
-// browser can upload a media file (up to 50 MB) straight to Blob, bypassing the
-// 4.5 MB serverless body limit. Routed at /api/blob (see vercel.json).
+// Vercel function: authorizes browser → Vercel Blob presigned uploads so a media
+// file (up to 50 MB) goes straight to Blob, bypassing the 4.5 MB serverless body
+// limit. Uses the OIDC auth the Blob connection provides (VERCEL_OIDC_TOKEN +
+// BLOB_STORE_ID) — no BLOB_READ_WRITE_TOKEN needed. Routed at /api/blob.
 //
 // Handles both invocation styles Vercel may use: Node (req, res) and Web (Request).
-import { handleUpload } from "@vercel/blob/client";
+import { issueSignedToken } from "@vercel/blob";
+import { handleUploadPresigned } from "@vercel/blob/client";
 
 const MAX_BYTES = 50 * 1024 * 1024; // keep in sync with backend max_upload_mb
+const ALLOWED = ["video/*", "audio/*", "application/octet-stream"];
 
 export default async function handler(reqOrRequest, maybeRes) {
   const isNode = maybeRes && typeof maybeRes.end === "function";
 
-  // ── read + parse the JSON body ───────────────────────────────
   let raw = "";
   if (isNode) {
     for await (const chunk of reqOrRequest) raw += chunk;
@@ -24,34 +26,36 @@ export default async function handler(reqOrRequest, maybeRes) {
     return send(isNode, maybeRes, 400, { error: "invalid JSON body" });
   }
 
-  // ── a Web Request that @vercel/blob can read headers from ────
   let webRequest;
-  let origin;
   if (isNode) {
     const host = reqOrRequest.headers.host || "localhost";
     const proto = reqOrRequest.headers["x-forwarded-proto"] || "https";
-    origin = `${proto}://${host}`;
-    webRequest = new Request(`${origin}${reqOrRequest.url || "/api/blob"}`, {
+    webRequest = new Request(`${proto}://${host}${reqOrRequest.url || "/api/blob"}`, {
       method: reqOrRequest.method || "POST",
       headers: new Headers(reqOrRequest.headers),
     });
   } else {
     webRequest = reqOrRequest;
-    origin = new URL(reqOrRequest.url).origin;
   }
 
-  const prod = process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  const callbackUrl = `${prod ? `https://${prod}` : origin}/api/blob`;
-
   try {
-    const jsonResponse = await handleUpload({
+    const jsonResponse = await handleUploadPresigned({
       body,
       request: webRequest,
-      onBeforeGenerateToken: async () => ({
-        allowedContentTypes: ["video/*", "audio/*"],
-        maximumSizeInBytes: MAX_BYTES,
-        addRandomSuffix: true,
-        callbackUrl,
+      getSignedToken: async (pathname) => ({
+        token: await issueSignedToken({
+          pathname,
+          operations: ["put"],
+          allowedContentTypes: ALLOWED,
+          maximumSizeInBytes: MAX_BYTES,
+          validUntil: Date.now() + 60 * 60 * 1000,
+        }),
+        urlOptions: {
+          allowedContentTypes: ALLOWED,
+          maximumSizeInBytes: MAX_BYTES,
+          addRandomSuffix: true,
+          validUntil: Date.now() + 30 * 60 * 1000,
+        },
       }),
       onUploadCompleted: async () => {
         // No-op: the browser hands the blob URL straight to /api/v1/transcripts.

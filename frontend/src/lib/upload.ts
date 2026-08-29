@@ -1,10 +1,23 @@
-import { upload } from "@vercel/blob/client";
+import { uploadPresigned } from "@vercel/blob/client";
 
 export const MAX_UPLOAD_MB = 50;
 const MAX_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
 export const ACCEPTED_EXTENSIONS =
   ".mp4,.webm,.mov,.mkv,.mpeg,.mpg,.mp3,.m4a,.wav,.flac,.ogg,.aac";
+
+const EXT_CONTENT_TYPE: Record<string, string> = {
+  mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime", mkv: "video/x-matroska",
+  mpeg: "video/mpeg", mpg: "video/mpeg",
+  mp3: "audio/mpeg", m4a: "audio/mp4", wav: "audio/wav", flac: "audio/flac",
+  ogg: "audio/ogg", aac: "audio/aac",
+};
+
+function contentTypeFor(file: File): string {
+  if (file.type) return file.type;
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+  return EXT_CONTENT_TYPE[ext] ?? "application/octet-stream";
+}
 
 export interface UploadResult {
   url: string;
@@ -33,10 +46,11 @@ export async function uploadTranscriptFile(
   const err = validateFile(file);
   if (err) throw new Error(err);
 
-  const blob = await upload(file.name, file, {
+  const contentType = contentTypeFor(file);
+  const blob = await uploadPresigned(file.name, file, {
     access: "public",
     handleUploadUrl: "/api/blob",
-    contentType: file.type || undefined,
+    contentType,
     onUploadProgress: onProgress
       ? ({ percentage }) => onProgress(Math.round(percentage))
       : undefined,
@@ -44,7 +58,7 @@ export async function uploadTranscriptFile(
 
   return {
     url: blob.url,
-    contentType: blob.contentType || file.type || "application/octet-stream",
+    contentType: blob.contentType || contentType,
     filename: file.name,
   };
 }
