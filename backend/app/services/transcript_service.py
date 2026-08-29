@@ -27,16 +27,38 @@ from app.services.stats_service import count_words
 from app.utils.youtube_url import parse_youtube_url
 from app.workers import enqueue_transcript
 
+_CONTENT_TYPES = {
+    "mp4": "video/mp4", "webm": "video/webm", "mov": "video/quicktime", "mkv": "video/x-matroska",
+    "mpeg": "video/mpeg", "mpg": "video/mpeg",
+    "mp3": "audio/mpeg", "m4a": "audio/mp4", "wav": "audio/wav", "flac": "audio/flac",
+    "ogg": "audio/ogg", "oga": "audio/ogg", "aac": "audio/aac",
+}
+
 
 def _month_start() -> datetime:
     now = datetime.now(timezone.utc)
     return now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
 
+def _clean_title(filename: str | None) -> str:
+    if not filename:
+        return "Uploaded file"
+    stem = filename.rsplit("/", 1)[-1].rsplit(".", 1)[0]
+    return stem.replace("_", " ").replace("-", " ").strip() or "Uploaded file"
+
+
+def _guess_content_type(filename: str | None, file_url: str) -> str | None:
+    name = (filename or file_url).lower()
+    ext = name.rsplit(".", 1)[-1] if "." in name else ""
+    return _CONTENT_TYPES.get(ext)
+
+
 def create_transcript_job(
     db: Session,
     *,
-    youtube_url: str,
+    youtube_url: str | None = None,
+    file_url: str | None = None,
+    filename: str | None = None,
     accuracy_mode: str,
     language: str | None,
     owner: User | None,
@@ -44,7 +66,6 @@ def create_transcript_job(
     from app.db.bootstrap import ensure_schema
 
     ensure_schema()  # cheap no-op after the first call
-    parsed = parse_youtube_url(youtube_url)
 
     if owner is not None:
         used = db.scalar(
@@ -58,11 +79,29 @@ def create_transcript_job(
                 "You've reached the current processing limit. Please try again later.",
             )
 
-    video = db.scalar(select(Video).where(Video.youtube_video_id == parsed.video_id))
-    if video is None:
-        video = Video(youtube_video_id=parsed.video_id, url=parsed.canonical_url)
+    if file_url:
+        video = Video(
+            source_type="upload",
+            youtube_video_id=None,
+            url=file_url,
+            source_url=file_url,
+            original_filename=filename,
+            content_type=_guess_content_type(filename, file_url),
+            title=_clean_title(filename),
+        )
         db.add(video)
         db.flush()
+    else:
+        parsed = parse_youtube_url(youtube_url or "")
+        video = db.scalar(select(Video).where(Video.youtube_video_id == parsed.video_id))
+        if video is None:
+            video = Video(
+                source_type="youtube",
+                youtube_video_id=parsed.video_id,
+                url=parsed.canonical_url,
+            )
+            db.add(video)
+            db.flush()
 
     transcript = Transcript(
         video_id=video.id,
@@ -199,6 +238,7 @@ def serialize_list_item(tr: Transcript) -> dict:
         "language": tr.language,
         "accuracy_mode": tr.accuracy_mode,
         "created_at": tr.created_at,
+        "source_type": tr.video.source_type if tr.video else "youtube",
         "title": tr.video.title if tr.video else None,
         "channel": tr.video.channel if tr.video else None,
         "thumbnail_url": tr.video.thumbnail_url if tr.video else None,
@@ -248,8 +288,8 @@ def build_export_bundle(db: Session, tr: Transcript, *, variant: str) -> ExportB
 
     video = tr.video
     return ExportBundle(
-        title=(video.title if video else None) or f"YouTube {tr.video.youtube_video_id}",
-        video_id=video.youtube_video_id if video else "",
+        title=(video.title if video else None) or "Transcript",
+        video_id=(video.youtube_video_id if video else None) or "",
         url=video.url if video else "",
         channel=video.channel if video else None,
         language=tr.language,

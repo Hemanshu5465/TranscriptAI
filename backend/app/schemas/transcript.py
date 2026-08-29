@@ -2,26 +2,23 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.models import ACCURACY_CLEAN, ACCURACY_MODES
 from app.schemas.video import VideoOut
 from app.utils.youtube_url import InvalidYouTubeURL, extract_video_id
 
+_BLOB_HOST = "blob.vercel-storage.com"
+
 
 class TranscriptCreate(BaseModel):
-    youtube_url: str = Field(min_length=6, max_length=500)
+    """Exactly one of ``youtube_url`` or ``file_url`` must be given."""
+
+    youtube_url: str | None = Field(default=None, max_length=500)
+    file_url: str | None = Field(default=None, max_length=1000)
+    filename: str | None = Field(default=None, max_length=255)
     accuracy_mode: str = ACCURACY_CLEAN
     language: str | None = Field(default=None, max_length=16)
-
-    @field_validator("youtube_url")
-    @classmethod
-    def _valid_url(cls, v: str) -> str:
-        try:
-            extract_video_id(v)
-        except InvalidYouTubeURL as exc:
-            raise ValueError(f"Not a valid YouTube URL ({exc}).") from exc
-        return v.strip()
 
     @field_validator("accuracy_mode")
     @classmethod
@@ -29,6 +26,24 @@ class TranscriptCreate(BaseModel):
         if v not in ACCURACY_MODES:
             raise ValueError(f"accuracy_mode must be one of {sorted(ACCURACY_MODES)}")
         return v
+
+    @model_validator(mode="after")
+    def _one_source(self) -> "TranscriptCreate":
+        yt = (self.youtube_url or "").strip()
+        fu = (self.file_url or "").strip()
+        if bool(yt) == bool(fu):
+            raise ValueError("Provide either a YouTube URL or an uploaded file, not both.")
+        if yt:
+            try:
+                extract_video_id(yt)
+            except InvalidYouTubeURL as exc:
+                raise ValueError(f"Not a valid YouTube URL ({exc}).") from exc
+            self.youtube_url = yt
+        else:
+            if not (fu.startswith("https://") and _BLOB_HOST in fu):
+                raise ValueError("file_url must be an uploaded file URL.")
+            self.file_url = fu
+        return self
 
 
 class WordOut(BaseModel):
@@ -118,6 +133,7 @@ class TranscriptListItem(BaseModel):
     language: str | None = None
     accuracy_mode: str
     created_at: datetime
+    source_type: str = "youtube"
     title: str | None = None
     channel: str | None = None
     thumbnail_url: str | None = None

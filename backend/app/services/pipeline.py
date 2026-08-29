@@ -86,35 +86,42 @@ def _execute(db: Session, tr: Transcript) -> None:
     if video is None:
         raise PipelineError("Internal error: video record missing.")
 
+    is_upload = video.source_type == "upload"
+
     # 1. validate
     _set_stage(db, tr, "validate_url")
-    try:
-        parsed = parse_youtube_url(video.url)
-    except InvalidYouTubeURL:
-        raise PipelineError("Please enter a valid YouTube URL.")
+    if is_upload:
+        parsed = None
+    else:
+        try:
+            parsed = parse_youtube_url(video.url)
+        except InvalidYouTubeURL:
+            raise PipelineError("Please enter a valid YouTube URL.")
 
-    # 2. metadata
+    # 2. metadata (YouTube only — uploads already have a title from the filename)
     _set_stage(db, tr, "fetch_metadata")
-    try:
-        meta = get_video_metadata(video.url)
-        video.title = meta.title or video.title
-        video.channel = meta.channel or video.channel
-        video.thumbnail_url = meta.thumbnail_url or video.thumbnail_url
-        video.duration_seconds = meta.duration_seconds or video.duration_seconds
-        video.published_at = meta.published_at or video.published_at
-        video.description = meta.description or video.description
-        db.add(video)
-        db.commit()
-    except VideoUnavailable as exc:
-        raise PipelineError(str(exc))
+    if not is_upload:
+        try:
+            meta = get_video_metadata(video.url)
+            video.title = meta.title or video.title
+            video.channel = meta.channel or video.channel
+            video.thumbnail_url = meta.thumbnail_url or video.thumbnail_url
+            video.duration_seconds = meta.duration_seconds or video.duration_seconds
+            video.published_at = meta.published_at or video.published_at
+            video.description = meta.description or video.description
+            db.add(video)
+            db.commit()
+        except VideoUnavailable as exc:
+            raise PipelineError(str(exc))
 
     # 3 + 4. retrieve transcript / speech recognition
     _set_stage(db, tr, "retrieve_transcript")
     req = TranscriptionRequest(
-        video_id=parsed.video_id,
-        canonical_url=parsed.canonical_url,
+        video_id="upload" if is_upload else parsed.video_id,
+        canonical_url=(video.source_url or video.url) if is_upload else parsed.canonical_url,
         preferred_languages=[tr.language] if tr.language else ["en"],
         duration_seconds=video.duration_seconds,
+        source_kind="file" if is_upload else "youtube",
     )
     try:
         result = transcribe(req)

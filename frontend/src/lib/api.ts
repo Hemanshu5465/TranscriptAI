@@ -74,6 +74,10 @@ export const transcriptApi = {
     api
       .post<JobStatusOut>("/transcripts", { youtube_url, accuracy_mode, language: language || null })
       .then((r) => r.data),
+  createFromFile: (file_url: string, filename: string, accuracy_mode: string) =>
+    api
+      .post<JobStatusOut>("/transcripts", { file_url, filename, accuracy_mode })
+      .then((r) => r.data),
   jobStatus: (jobId: string) =>
     api.get<JobStatusOut>(`/transcripts/${jobId}/status`).then((r) => r.data),
   get: (id: string) => api.get<TranscriptDetail>(`/transcripts/${id}`).then((r) => r.data),

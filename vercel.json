@@ -8,9 +8,13 @@
     "api/index.py": {
       "maxDuration": 60,
       "includeFiles": "backend/**"
+    },
+    "api/blob.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
+    { "source": "/api/blob", "destination": "/api/blob" },
     { "source": "/api/(.*)", "destination": "/api/index" },
     { "source": "/((?!api/|assets/).*)", "destination": "/index.html" }
   ]

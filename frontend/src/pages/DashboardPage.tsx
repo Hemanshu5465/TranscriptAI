@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Mic, Search } from "lucide-react";
+import { FileVideo, Mic, Search } from "lucide-react";
 import { UrlComposer } from "../components/UrlComposer";
 import { EmptyState, Skeleton } from "../components/States";
 import { useAuth } from "../store/auth";
@@ -98,17 +98,24 @@ export function DashboardPage() {
 
 function TranscriptCard({ item }: { item: TranscriptListItem }) {
   const thumb = item.thumbnail_url ?? "";
+  const isUpload = item.source_type === "upload";
   return (
     <Link
       to={item.status === "completed" ? `/t/${item.id}` : `/t/${item.id}/processing`}
       className="group flex items-center gap-4 rounded-2xl border border-line bg-surface p-3 transition-colors hover:border-ink-faint"
     >
-      <div className="aspect-video w-28 shrink-0 overflow-hidden rounded-lg bg-surface-sunken sm:w-36">
-        {thumb && <img src={thumb} alt="" className="size-full object-cover" />}
+      <div className="grid aspect-video w-28 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-sunken text-ink-faint sm:w-36">
+        {isUpload ? (
+          <FileVideo className="size-6" />
+        ) : (
+          thumb && <img src={thumb} alt="" className="size-full object-cover" />
+        )}
       </div>
       <div className="min-w-0 flex-1">
-        <h3 className="truncate font-display text-[1.02rem]">{item.title ?? "Untitled video"}</h3>
-        <p className="mt-0.5 truncate text-sm text-ink-soft">{item.channel ?? "—"}</p>
+        <h3 className="truncate font-display text-[1.02rem]">{item.title ?? "Untitled"}</h3>
+        <p className="mt-0.5 truncate text-sm text-ink-soft">
+          {isUpload ? "Uploaded file" : item.channel ?? "—"}
+        </p>
         <p className="mt-1.5 flex flex-wrap gap-x-2 text-xs text-ink-faint">
           <span>{humanDuration(item.duration_seconds)}</span>
           <span>·</span>

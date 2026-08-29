@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useTranscript } from "../hooks/useTranscriptData";
 import { useYouTubePlayer } from "../hooks/useYouTubePlayer";
+import { useMediaElementPlayer } from "../hooks/useMediaElementPlayer";
 import { VideoPanel } from "../components/VideoPanel";
 import { StatsPanel } from "../components/StatsPanel";
 import { TranscriptWorkspace } from "../components/TranscriptWorkspace";
@@ -11,7 +12,12 @@ import { apiErrorMessage } from "../lib/api";
 export function TranscriptPage() {
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, isError, error } = useTranscript(id, { poll: true });
-  const player = useYouTubePlayer(data?.video.youtube_video_id);
+  const isUpload = data?.video.source_type === "upload";
+  const yt = useYouTubePlayer(isUpload ? undefined : data?.video.youtube_video_id ?? undefined);
+  const media = useMediaElementPlayer();
+  const player = isUpload
+    ? { currentTime: media.currentTime, seekTo: media.seekTo }
+    : { currentTime: yt.currentTime, seekTo: yt.seekTo };
 
   if (isLoading) {
     return (
@@ -73,8 +79,9 @@ export function TranscriptPage() {
             video={data.video}
             language={data.language}
             languageConfidence={data.language_confidence}
-            playerRef={player.containerRef}
-            playerReady={player.ready}
+            playerRef={isUpload ? undefined : yt.containerRef}
+            playerReady={isUpload ? undefined : yt.ready}
+            mediaRef={isUpload ? media.mediaRef : undefined}
           />
           <StatsPanel stats={data.stats} />
         </aside>

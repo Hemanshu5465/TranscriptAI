@@ -12,8 +12,12 @@ class VideoValidateOut(BaseModel):
 
 class VideoOut(BaseModel):
     id: str
-    youtube_video_id: str
+    source_type: str = "youtube"
+    youtube_video_id: str | None = None
     url: str
+    source_url: str | None = None
+    original_filename: str | None = None
+    content_type: str | None = None
     title: str | None = None
     channel: str | None = None
     duration_seconds: int | None = None

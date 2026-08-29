@@ -18,8 +18,12 @@ export interface AuthResponse {
 
 export interface VideoOut {
   id: string;
-  youtube_video_id: string;
+  source_type: "youtube" | "upload";
+  youtube_video_id: string | null;
   url: string;
+  source_url: string | null;
+  original_filename: string | null;
+  content_type: string | null;
   title: string | null;
   channel: string | null;
   duration_seconds: number | null;
@@ -98,6 +102,7 @@ export interface TranscriptListItem {
   language: string | null;
   accuracy_mode: AccuracyMode;
   created_at: string;
+  source_type: "youtube" | "upload";
   title: string | null;
   channel: string | null;
   thumbnail_url: string | null;

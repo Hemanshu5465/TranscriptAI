@@ -42,6 +42,8 @@ def create_transcript(
     tr = create_transcript_job(
         db,
         youtube_url=payload.youtube_url,
+        file_url=payload.file_url,
+        filename=payload.filename,
         accuracy_mode=payload.accuracy_mode,
         language=payload.language,
         owner=user,

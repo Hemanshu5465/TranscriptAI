@@ -57,6 +57,7 @@ class TranscriptionRequest:
     canonical_url: str
     preferred_languages: list[str] = field(default_factory=lambda: ["en"])
     duration_seconds: int | None = None
+    source_kind: str = "youtube"  # "youtube" | "file"
 
 
 class TranscriptionProvider(ABC):

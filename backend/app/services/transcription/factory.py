@@ -28,6 +28,9 @@ _REGISTRY: dict[str, type[TranscriptionProvider]] = {
 # Fallback order when the primary provider yields nothing usable.
 _CHAIN = ["supadata", "youtube_captions", "faster_whisper", "deepgram"]
 
+# Providers that can transcribe an arbitrary media URL (not just YouTube).
+_FILE_CAPABLE = ["supadata", "deepgram"]
+
 
 def get_provider(name: str) -> TranscriptionProvider:
     try:
@@ -36,7 +39,9 @@ def get_provider(name: str) -> TranscriptionProvider:
         raise ValueError(f"Unknown transcription provider: {name!r}") from exc
 
 
-def resolve_provider_order() -> list[str]:
+def resolve_provider_order(source_kind: str = "youtube") -> list[str]:
+    if source_kind == "file":
+        return list(_FILE_CAPABLE)
     primary = settings.transcription_provider
     # A Supadata key present + the default provider selected → prefer Supadata.
     # It fetches captions server-side, so it works from datacenter IPs (Vercel)
@@ -53,7 +58,7 @@ def transcribe(request: TranscriptionRequest) -> TranscriptionResult:
     last_error: Exception | None = None
     tried: list[str] = []
 
-    for name in resolve_provider_order():
+    for name in resolve_provider_order(request.source_kind):
         provider = get_provider(name)
         if not provider.is_available():
             continue
@@ -70,6 +75,10 @@ def transcribe(request: TranscriptionRequest) -> TranscriptionResult:
 
     if last_error is not None:
         raise last_error
+    if request.source_kind == "file":
+        raise ProviderUnavailable(
+            "File transcription is not configured (needs SUPADATA_API_KEY)."
+        )
     raise TranscriptSourceNotFound(
         "We couldn't access a permitted transcript or media source for this video."
         + (f" (providers tried: {', '.join(tried)})" if tried else "")
