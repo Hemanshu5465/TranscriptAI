@@ -75,9 +75,11 @@ class Settings(BaseSettings):
     # Hosted transcript API (works from datacenter IPs). Free tier at supadata.ai.
     supadata_api_key: str = ""
 
-    # File upload → Vercel Blob. BLOB_READ_WRITE_TOKEN is injected by Vercel when
-    # a Blob store is connected; the browser uploads directly (see api/blob.js).
+    # File upload → Vercel Blob. Vercel injects BLOB_STORE_ID (OIDC flow) and/or
+    # BLOB_READ_WRITE_TOKEN when a Blob store is connected. The browser uploads
+    # directly via a presigned URL minted by api/blob.js.
     blob_read_write_token: str = ""
+    blob_store_id: str = ""
     max_upload_mb: int = 50
 
     # Rate limits
@@ -107,7 +109,7 @@ class Settings(BaseSettings):
 
     @property
     def blob_configured(self) -> bool:
-        return bool(self.blob_read_write_token)
+        return bool(self.blob_read_write_token or self.blob_store_id)
 
     @property
     def file_upload_enabled(self) -> bool:
