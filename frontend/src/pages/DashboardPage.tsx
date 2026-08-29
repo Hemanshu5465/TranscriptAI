@@ -177,7 +177,7 @@ function TranscriptCard({
         <button
           onClick={() => setConfirming(true)}
           aria-label={`Delete transcript "${item.title ?? "Untitled"}"`}
-          className="grid size-8 shrink-0 place-items-center rounded-full text-ink-faint opacity-0 transition-opacity hover:bg-surface-sunken hover:text-accent focus-visible:opacity-100 group-hover:opacity-100"
+          className="grid size-8 shrink-0 place-items-center rounded-full text-ink-faint/60 transition-colors hover:bg-surface-sunken hover:text-accent group-hover:text-ink-faint"
         >
           <Trash2 className="size-4" />
         </button>
