@@ -17,7 +17,10 @@ export function segmentText(
   variant: TextVariant,
   edits: Record<number, string>,
 ): string {
-  if (variant === "edited" && edits[seg.order_index] !== undefined) return edits[seg.order_index];
+  if (variant === "edited") {
+    if (edits[seg.order_index] !== undefined) return edits[seg.order_index];
+    if (seg.edited_text != null) return seg.edited_text;
+  }
   if (variant === "raw") return seg.raw_text ?? seg.text;
   return seg.text;
 }

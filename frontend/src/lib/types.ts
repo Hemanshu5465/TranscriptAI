@@ -47,6 +47,7 @@ export interface SegmentOut {
   end_time: number;
   text: string;
   raw_text: string | null;
+  edited_text: string | null;
   confidence: number | null;
   words: WordOut[];
 }

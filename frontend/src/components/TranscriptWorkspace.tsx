@@ -49,7 +49,8 @@ export function TranscriptWorkspace({ transcript, currentTime, onSeek }: Props) 
         speaker: s.speaker,
         start_time: s.start_time,
         end_time: s.end_time,
-        text: edits.state[s.order_index] ?? s.text,
+        // Keep previously-saved edits on segments the user didn't touch this round.
+        text: edits.state[s.order_index] ?? segmentText(s, "edited", {}),
       }));
       return transcriptApi.update(transcript.id, payload);
     },
@@ -69,9 +70,12 @@ export function TranscriptWorkspace({ transcript, currentTime, onSeek }: Props) 
         speaker: s.speaker,
         start_time: s.start_time,
         end_time: s.end_time,
-        text: segmentText(s, variant, edits.state),
+        // While editing, resolve against the "edited" layer so the textarea is a
+        // controlled input that reflects every keystroke (live edit → last saved
+        // edit → clean text); otherwise honour the selected raw / clean / edited view.
+        text: segmentText(s, editing ? "edited" : variant, edits.state),
       })),
-    [transcript.segments, variant, edits.state],
+    [transcript.segments, variant, edits.state, editing],
   );
 
   const searchSource = useMemo(

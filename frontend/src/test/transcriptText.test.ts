@@ -10,6 +10,7 @@ const seg = (over: Partial<SegmentOut>): SegmentOut => ({
   end_time: 4,
   text: "Hello there.",
   raw_text: "hello there",
+  edited_text: null,
   confidence: null,
   words: [],
   ...over,
@@ -24,6 +25,12 @@ describe("segmentText", () => {
   });
   it("falls back to clean text", () => {
     expect(segmentText(seg({}), "clean", {})).toBe("Hello there.");
+  });
+  it("uses the saved edited_text for the edited variant when there is no local edit", () => {
+    expect(segmentText(seg({ edited_text: "SAVED EDIT" }), "edited", {})).toBe("SAVED EDIT");
+  });
+  it("local edit still wins over saved edited_text", () => {
+    expect(segmentText(seg({ edited_text: "SAVED EDIT" }), "edited", { 0: "LIVE" })).toBe("LIVE");
   });
 });
 

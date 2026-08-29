@@ -63,6 +63,7 @@ class SegmentOut(BaseModel):
     end_time: float
     text: str
     raw_text: str | None = None
+    edited_text: str | None = None
     confidence: float | None = None
     words: list[WordOut] = []
 

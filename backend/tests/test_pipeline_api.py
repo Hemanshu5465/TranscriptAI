@@ -109,6 +109,12 @@ def test_edit_and_export(client, fake_pipeline):
     upd = client.put(f"/api/v1/transcripts/{job_id}", json=payload)
     assert upd.status_code == 200
     assert upd.json()["edited_text"].startswith("EDITED FIRST LINE.")
+    # The saved edit is surfaced per-segment so the workspace can render it.
+    assert upd.json()["segments"][0]["edited_text"] == "EDITED FIRST LINE."
+
+    # …and it survives a fresh fetch.
+    refetched = client.get(f"/api/v1/transcripts/{job_id}").json()
+    assert refetched["segments"][0]["edited_text"] == "EDITED FIRST LINE."
 
     for fmt in ["txt", "srt", "vtt", "json", "csv", "docx", "pdf"]:
         resp = client.get(f"/api/v1/transcripts/{job_id}/export", params={"format": fmt})

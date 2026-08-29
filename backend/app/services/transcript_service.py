@@ -261,8 +261,12 @@ def apply_edit(
 def serialize_detail(db: Session, tr: Transcript) -> dict:
     edit = latest_edit(db, tr.id)
     edited_text = None
+    edited_by_index: dict[int, str] = {}
     if edit:
         edited_text = "\n\n".join(seg["text"] for seg in edit.content if seg.get("text"))
+        edited_by_index = {
+            c["order_index"]: c["text"] for c in edit.content if "order_index" in c
+        }
 
     return {
         "id": tr.id,
@@ -291,6 +295,7 @@ def serialize_detail(db: Session, tr: Transcript) -> dict:
                 "end_time": s.end_time,
                 "text": s.text,
                 "raw_text": s.raw_text,
+                "edited_text": edited_by_index.get(s.order_index),
                 "confidence": s.confidence,
                 "words": [
                     {
