@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "motion/react";
+import { useInView, useReducedMotion } from "motion/react";
 import { cn } from "../../lib/cn";
 
 /**
- * A mechanical split-flap display (airport / train-station board). Rows of
- * character tiles riffle through glyphs and clatter to a stop, cascading left to
- * right, cycling through short lines about the product. Purely decorative — the
- * headline carries the real message — so the whole thing is `aria-hidden`.
+ * A mechanical split-flap display (airport / departure board). Character tiles
+ * riffle through glyphs and clatter to a stop on a diagonal cascade, cycling
+ * through short lines about the product. It stays blank until scrolled into
+ * view, then does its first big flip. Purely decorative — `aria-hidden`.
  */
 
 const CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,-/· ";
@@ -15,8 +15,9 @@ const COLS = 12;
 const MESSAGES: string[][] = [
   ["EVERY SPOKEN", "WORD ON", "THE RECORD"],
   ["TIMESTAMPED", "DOWN TO", "THE SECOND"],
-  ["SRT VTT DOCX", "PDF JSON CSV", "ANY FORMAT"],
-  ["PASTE A LINK", "OR A FILE", "GET A SCRIPT"],
+  ["FIND ANY", "PHRASE IN", "ONE CLICK"],
+  ["EXPORT TO", "SRT VTT DOCX", "PDF JSON CSV"],
+  ["PASTE A LINK", "OR A FILE —", "GET A SCRIPT"],
 ];
 
 function fit(line: string): string {
@@ -74,7 +75,7 @@ function FlapCell({ target, delay, accent }: { target: string; delay: number; ac
   return (
     <span className="flap-cell">
       <span className={cn("flap-glyph", flip && "flap-glyph--flip", accent && "flap-glyph--accent")}>
-        {display === " " ? " " : display}
+        {display === " " ? " " : display}
       </span>
       <span className="flap-seam" />
     </span>
@@ -83,44 +84,53 @@ function FlapCell({ target, delay, accent }: { target: string; delay: number; ac
 
 export function SplitFlapBoard() {
   const reduced = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, amount: 0.35 });
+  const [fallback, setFallback] = useState(false);
   const [mi, setMi] = useState(0);
+
+  // Kick the board off once it's on screen — or after a beat if the observer
+  // never fires (no-JS-observer environments).
+  const started = reduced || inView || fallback;
 
   useEffect(() => {
     if (reduced) return;
-    const id = window.setInterval(() => setMi((v) => (v + 1) % MESSAGES.length), 4200);
-    return () => window.clearInterval(id);
+    const t = window.setTimeout(() => setFallback(true), 1800);
+    return () => window.clearTimeout(t);
   }, [reduced]);
 
-  const rows = MESSAGES[mi].map(fit);
+  useEffect(() => {
+    if (reduced || !started) return;
+    const id = window.setInterval(() => setMi((v) => (v + 1) % MESSAGES.length), 4200);
+    return () => window.clearInterval(id);
+  }, [reduced, started]);
+
+  const rows = (started ? MESSAGES[mi] : ["", "", ""]).map(fit);
 
   return (
     <div
+      ref={ref}
       aria-hidden="true"
-      className="split-flap mx-auto max-w-[480px] select-none md:mx-0"
-      onClick={() => !reduced && setMi((v) => (v + 1) % MESSAGES.length)}
+      className="split-flap mx-auto max-w-[880px] select-none"
+      onClick={() => started && !reduced && setMi((v) => (v + 1) % MESSAGES.length)}
     >
-      <div className="relative rounded-2xl border border-white/10 bg-[#1d1710] p-3.5 shadow-[0_40px_90px_-30px_rgba(20,18,12,0.6),0_0_0_1px_rgba(0,0,0,0.25)]">
-        {[
-          "left-2 top-2",
-          "right-2 top-2",
-          "left-2 bottom-2",
-          "right-2 bottom-2",
-        ].map((pos) => (
-          <span key={pos} className={`absolute ${pos} size-1 rounded-full bg-white/10`} />
+      <div className="relative rounded-[26px] border border-white/10 bg-[#1d1710] p-4 shadow-[0_50px_100px_-35px_rgba(20,18,12,0.6),0_0_0_1px_rgba(0,0,0,0.25)] sm:p-6">
+        {["left-3 top-3", "right-3 top-3", "left-3 bottom-3", "right-3 bottom-3"].map((pos) => (
+          <span key={pos} className={`absolute ${pos} size-1.5 rounded-full bg-white/10`} />
         ))}
-        <div className="flex flex-col gap-[6px]">
+        <div className="flex flex-col gap-1.5 sm:gap-2">
           {rows.map((line, r) => (
             <div
               key={r}
-              className="grid gap-[5px]"
+              className="grid gap-1.5 sm:gap-2"
               style={{ gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))` }}
             >
               {line.split("").map((ch, c) => (
                 <FlapCell
                   key={`${r}-${c}`}
                   target={ch}
-                  delay={(r + c) * 24}
-                  accent={r === rows.length - 1}
+                  delay={(r + c) * 26}
+                  accent={started && r === rows.length - 1}
                 />
               ))}
             </div>

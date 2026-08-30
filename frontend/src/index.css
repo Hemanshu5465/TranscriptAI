@@ -164,18 +164,18 @@
   display: grid;
   place-items: center;
   width: 100%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 4 / 5;
   overflow: hidden;
-  border-radius: 4px;
+  border-radius: 5px;
   background: linear-gradient(#26201a, #1a150f);
   color: #f3ecdf;
   font-family: var(--font-mono);
   font-weight: 700;
-  font-size: clamp(0.8rem, 2.1vw, 1.25rem);
+  font-size: clamp(0.78rem, 3.7vw, 2rem);
   line-height: 1;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    inset 0 -4px 6px rgba(0, 0, 0, 0.5);
+    inset 0 -5px 8px rgba(0, 0, 0, 0.5);
 }
 .flap-glyph {
   display: block;

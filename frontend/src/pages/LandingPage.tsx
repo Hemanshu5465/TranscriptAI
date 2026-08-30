@@ -17,8 +17,6 @@ import { useLenis } from "../hooks/useLenis";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-const HEAD_LINES = ["Turn any video", "into a script"];
-
 const FEATURES = [
   { icon: Timer, title: "Timestamped segments", body: "Every line is anchored to the moment it was spoken. Click to jump the video." },
   { icon: Search, title: "Search the spoken word", body: "Find any phrase across the whole transcript and leap straight to it." },
@@ -95,68 +93,65 @@ export function LandingPage() {
         <section className="paper-grain relative">
           <span
             aria-hidden
-            className="pointer-events-none absolute -left-4 top-10 -z-10 select-none font-display text-[13rem] leading-none text-ink/[0.035] sm:-left-8 sm:text-[22rem]"
+            className="pointer-events-none absolute -left-4 top-8 -z-10 select-none font-display text-[13rem] leading-none text-ink/[0.035] sm:-left-8 sm:text-[22rem]"
           >
             &ldquo;
           </span>
 
-          <div className="mx-auto grid max-w-6xl gap-12 px-4 pb-16 pt-16 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-10 lg:pt-24">
-            <div id="start" className="text-center lg:text-left">
-              <m.p
-                {...cue(0)}
-                className="mb-6 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-xs text-ink-soft"
-              >
-                <RecordDot /> Accurate transcription for creators &amp; researchers
-              </m.p>
-
-              <h1 className="font-display text-[2.7rem] leading-[1.12] tracking-tight sm:text-6xl">
-                {HEAD_LINES.map((line, li) => (
-                  <span key={li} className="block overflow-hidden">
-                    <m.span
-                      className="block"
-                      initial={reduced ? undefined : { y: "110%" }}
-                      animate={reduced ? undefined : { y: 0 }}
-                      transition={{ duration: 0.8, delay: 0.12 + li * 0.12, ease: EASE }}
-                    >
-                      {line}
-                    </m.span>
-                  </span>
-                ))}
-              </h1>
-
-              <m.p
-                {...cue(0.42)}
-                className="mx-auto mt-5 max-w-xl text-pretty text-lg text-ink-soft lg:mx-0"
-              >
-                Paste a YouTube URL or upload a file and generate an accurate, searchable,
-                timestamped transcript in seconds.
-              </m.p>
-
-              <m.div {...cue(0.5)} className="mt-8">
-                <UrlComposer autoFocus />
-              </m.div>
-
-              <m.p {...cue(0.58)} className="mt-4 break-words text-xs text-ink-faint">
-                Example: youtube.com/watch?v=dQw4w9WgXcQ · Only transcribe content you are
-                authorized to process.
-              </m.p>
-            </div>
-
-            <m.div
-              className="hidden md:block"
-              initial={reduced ? undefined : { opacity: 0, y: 20 }}
-              animate={reduced ? undefined : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3, ease: EASE }}
+          <div
+            id="start"
+            className="mx-auto max-w-3xl px-4 pb-16 pt-16 text-center sm:px-6 sm:pt-24"
+          >
+            <m.p
+              {...cue(0)}
+              className="mb-6 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-xs text-ink-soft"
             >
-              <SplitFlapBoard />
+              <RecordDot /> Accurate transcription for creators &amp; researchers
+            </m.p>
+
+            <m.h1
+              {...cue(0.08)}
+              className="text-balance font-display text-[2.7rem] leading-[1.06] tracking-tight sm:text-6xl"
+            >
+              Turn any video into a script
+            </m.h1>
+
+            <m.p {...cue(0.16)} className="mx-auto mt-5 max-w-xl text-pretty text-lg text-ink-soft">
+              Paste a YouTube URL or upload a file and generate an accurate, searchable,
+              timestamped transcript in seconds.
+            </m.p>
+
+            <m.div {...cue(0.24)} className="mt-9">
+              <UrlComposer autoFocus />
             </m.div>
+
+            <m.p {...cue(0.3)} className="mt-4 break-words text-xs text-ink-faint">
+              Example: youtube.com/watch?v=dQw4w9WgXcQ · Only transcribe content you are
+              authorized to process.
+            </m.p>
           </div>
         </section>
 
-        {/* ── Format ticker ────────────────────────────────────── */}
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <FormatTicker />
-        </div>
+        {/* ── Split-flap showcase ──────────────────────────────── */}
+        <section className="relative overflow-hidden border-y border-line bg-surface-sunken py-16 sm:py-24">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute left-1/2 top-1/2 h-[360px] w-[760px] max-w-[110vw] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
+            style={{
+              background:
+                "radial-gradient(closest-side, color-mix(in oklab, var(--color-accent) 18%, transparent), transparent)",
+            }}
+          />
+          <div className="relative mx-auto max-w-[920px] px-4 text-center sm:px-6">
+            <m.p
+              {...rise()}
+              className="mb-8 font-mono text-[0.7rem] uppercase tracking-[0.28em] text-ink-faint"
+            >
+              TranscriptAI, in a few words
+            </m.p>
+            <SplitFlapBoard />
+          </div>
+        </section>
 
         {/* ── Features ─────────────────────────────────────────── */}
         <section className="mx-auto max-w-5xl px-4 py-20 sm:px-6">
@@ -209,6 +204,11 @@ export function LandingPage() {
             ))}
           </div>
         </section>
+
+        {/* ── Format ticker ────────────────────────────────────── */}
+        <div className="mx-auto max-w-6xl px-4 pb-4 sm:px-6">
+          <FormatTicker />
+        </div>
 
         {/* ── Closing CTA ──────────────────────────────────────── */}
         <section className="relative overflow-hidden bg-ink text-paper">
