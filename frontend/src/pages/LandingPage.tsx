@@ -163,7 +163,7 @@ export function LandingPage() {
             was said.
           </m.p>
 
-          <div className="mt-8 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((f, i) => (
               <m.div
                 key={f.title}
@@ -171,7 +171,7 @@ export function LandingPage() {
                 whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.4 }}
                 transition={{ duration: 0.5, delay: (i % 3) * 0.08, ease: EASE }}
-                className="group relative bg-surface p-6 transition-colors hover:bg-surface-sunken"
+                className="group relative overflow-hidden rounded-xl border border-line bg-surface p-6 transition-colors hover:bg-surface-sunken"
               >
                 <span className="font-mono text-[0.7rem] text-ink-faint">
                   {String(i + 1).padStart(2, "0")}
