@@ -21,9 +21,9 @@ describe("LandingPage", () => {
     expect(screen.getByRole("button", { name: /start transcribing/i })).toBeInTheDocument();
   });
 
-  it("keeps the transcript demo out of the accessibility tree", () => {
+  it("keeps the decorative hero board out of the accessibility tree", () => {
     const { container } = renderLanding();
-    // The looping demo card is decorative — screen readers get the feature list instead.
-    expect(container.querySelector('[aria-hidden="true"].paper-grain')).not.toBeNull();
+    // The split-flap board is decoration — screen readers get the headline + features.
+    expect(container.querySelector('.split-flap[aria-hidden="true"]')).not.toBeNull();
   });
 });

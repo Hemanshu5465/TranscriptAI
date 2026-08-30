@@ -10,7 +10,7 @@ import {
 } from "motion/react";
 import { UrlComposer } from "../components/UrlComposer";
 import { RecordDot } from "../components/Brand";
-import { HeroStage } from "../components/landing/HeroStage";
+import { SplitFlapBoard } from "../components/landing/SplitFlapBoard";
 import { FormatTicker } from "../components/landing/FormatTicker";
 import { Magnetic } from "../components/landing/Magnetic";
 import { useLenis } from "../hooks/useLenis";
@@ -142,9 +142,14 @@ export function LandingPage() {
               </m.p>
             </div>
 
-            <div className="hidden md:block">
-              <HeroStage />
-            </div>
+            <m.div
+              className="hidden md:block"
+              initial={reduced ? undefined : { opacity: 0, y: 20 }}
+              animate={reduced ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3, ease: EASE }}
+            >
+              <SplitFlapBoard />
+            </m.div>
           </div>
         </section>
 
