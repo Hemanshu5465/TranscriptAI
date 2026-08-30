@@ -1,13 +1,23 @@
 import { FileText, Languages, Pencil, Search, ShieldCheck, Timer } from "lucide-react";
-import { LazyMotion, domAnimation, m, useReducedMotion } from "motion/react";
+import {
+  LazyMotion,
+  domAnimation,
+  m,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+} from "motion/react";
 import { UrlComposer } from "../components/UrlComposer";
 import { RecordDot } from "../components/Brand";
-import { TranscriptDemo } from "../components/landing/TranscriptDemo";
+import { HeroStage } from "../components/landing/HeroStage";
 import { FormatTicker } from "../components/landing/FormatTicker";
+import { Magnetic } from "../components/landing/Magnetic";
+import { useLenis } from "../hooks/useLenis";
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-const HEAD_WORDS = ["Turn", "any", "video", "into", "a", "script"];
+const HEAD_LINES = ["Turn any video", "into a script"];
 
 const FEATURES = [
   { icon: Timer, title: "Timestamped segments", body: "Every line is anchored to the moment it was spoken. Click to jump the video." },
@@ -24,25 +34,14 @@ const STEPS = [
   { n: "03", title: "Edit & export", body: "Fix a word if you need to, then download it in any of seven formats." },
 ];
 
-function scrollToComposer() {
-  const el = document.getElementById("start");
-  el?.scrollIntoView({ behavior: "smooth", block: "center" });
-  el?.querySelector<HTMLInputElement>('input:not([type="file"])')?.focus({ preventScroll: true });
-}
-
 export function LandingPage() {
   const reduced = useReducedMotion();
+  const lenisRef = useLenis(!reduced);
 
-  // Mount-time reveals (not scroll-gated) — the page is short, and this keeps
-  // every section visible even if IntersectionObserver never fires.
-  const rise = (delay = 0) =>
-    reduced
-      ? {}
-      : {
-          initial: { opacity: 0, y: 18 },
-          animate: { opacity: 1, y: 0 },
-          transition: { duration: 0.55, delay, ease: EASE },
-        };
+  const { scrollYProgress } = useScroll();
+  const progressScaleX = useSpring(scrollYProgress, { stiffness: 120, damping: 30, mass: 0.3 });
+  const washY = useTransform(scrollYProgress, [0, 1], [0, -140]);
+  const washOpacity = useTransform(scrollYProgress, [0, 0.45, 1], [1, 0.55, 0.12]);
 
   const cue = (delay: number) =>
     reduced
@@ -53,12 +52,47 @@ export function LandingPage() {
           transition: { duration: 0.5, delay, ease: EASE },
         };
 
+  const rise = (delay = 0) =>
+    reduced
+      ? {}
+      : {
+          initial: { opacity: 0, y: 20 },
+          whileInView: { opacity: 1, y: 0 },
+          viewport: { once: true, amount: 0.35 },
+          transition: { duration: 0.55, delay, ease: EASE },
+        };
+
+  function goToComposer() {
+    const el = document.getElementById("start");
+    if (lenisRef.current) lenisRef.current.scrollTo("#start", { offset: -110, duration: 1.1 });
+    else el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    window.setTimeout(
+      () => el?.querySelector<HTMLInputElement>('input:not([type="file"])')?.focus({ preventScroll: true }),
+      reduced ? 0 : 500,
+    );
+  }
+
   return (
     <LazyMotion features={domAnimation}>
+      {/* scroll progress */}
+      <m.div
+        aria-hidden
+        className="fixed inset-x-0 top-0 z-[60] h-[2px] origin-left bg-accent"
+        style={{ scaleX: reduced ? 1 : progressScaleX }}
+      />
+
+      {/* drifting warm wash behind everything */}
+      <m.div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10"
+        style={reduced ? undefined : { y: washY, opacity: washOpacity }}
+      >
+        <div className="hero-wash absolute inset-x-0 top-0 h-[85vh]" />
+      </m.div>
+
       <div className="overflow-x-clip">
         {/* ── Hero ─────────────────────────────────────────────── */}
         <section className="paper-grain relative">
-          <div className="hero-wash pointer-events-none absolute inset-0 -z-10" aria-hidden />
           <span
             aria-hidden
             className="pointer-events-none absolute -left-4 top-10 -z-10 select-none font-display text-[13rem] leading-none text-ink/[0.035] sm:-left-8 sm:text-[22rem]"
@@ -75,43 +109,42 @@ export function LandingPage() {
                 <RecordDot /> Accurate transcription for creators &amp; researchers
               </m.p>
 
-              <h1 className="text-balance font-display text-[2.6rem] leading-[1.04] tracking-tight sm:text-6xl">
-                {HEAD_WORDS.map((w, i) => (
-                  <m.span key={i} {...cue(0.05 * (i + 1))} className="inline-block">
-                    {w}&nbsp;
-                  </m.span>
+              <h1 className="font-display text-[2.7rem] leading-[1.12] tracking-tight sm:text-6xl">
+                {HEAD_LINES.map((line, li) => (
+                  <span key={li} className="block overflow-hidden">
+                    <m.span
+                      className="block"
+                      initial={reduced ? undefined : { y: "110%" }}
+                      animate={reduced ? undefined : { y: 0 }}
+                      transition={{ duration: 0.8, delay: 0.12 + li * 0.12, ease: EASE }}
+                    >
+                      {line}
+                    </m.span>
+                  </span>
                 ))}
               </h1>
 
               <m.p
-                {...cue(0.05 * (HEAD_WORDS.length + 1))}
+                {...cue(0.42)}
                 className="mx-auto mt-5 max-w-xl text-pretty text-lg text-ink-soft lg:mx-0"
               >
                 Paste a YouTube URL or upload a file and generate an accurate, searchable,
                 timestamped transcript in seconds.
               </m.p>
 
-              <m.div {...cue(0.05 * (HEAD_WORDS.length + 2))} className="mt-8">
+              <m.div {...cue(0.5)} className="mt-8">
                 <UrlComposer autoFocus />
               </m.div>
 
-              <m.p
-                {...cue(0.05 * (HEAD_WORDS.length + 3))}
-                className="mt-4 break-words text-xs text-ink-faint"
-              >
+              <m.p {...cue(0.58)} className="mt-4 break-words text-xs text-ink-faint">
                 Example: youtube.com/watch?v=dQw4w9WgXcQ · Only transcribe content you are
                 authorized to process.
               </m.p>
             </div>
 
-            <m.div
-              className="hidden md:block"
-              initial={reduced ? undefined : { opacity: 0, y: 26, rotate: -3.5 }}
-              animate={reduced ? undefined : { opacity: 1, y: 0, rotate: -1.5 }}
-              transition={{ duration: 0.75, delay: 0.25, ease: EASE }}
-            >
-              <TranscriptDemo />
-            </m.div>
+            <div className="hidden md:block">
+              <HeroStage />
+            </div>
           </div>
         </section>
 
@@ -134,9 +167,10 @@ export function LandingPage() {
             {FEATURES.map((f, i) => (
               <m.div
                 key={f.title}
-                initial={reduced ? undefined : { opacity: 0, y: 20 }}
-                animate={reduced ? undefined : { opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.15 + i * 0.06, ease: EASE }}
+                initial={reduced ? undefined : { opacity: 0, y: 24 }}
+                whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.4 }}
+                transition={{ duration: 0.5, delay: (i % 3) * 0.08, ease: EASE }}
                 className="group relative bg-surface p-6 transition-colors hover:bg-surface-sunken"
               >
                 <span className="font-mono text-[0.7rem] text-ink-faint">
@@ -145,6 +179,7 @@ export function LandingPage() {
                 <f.icon className="mt-3 size-5 text-accent transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110" />
                 <h3 className="mt-3 font-display text-lg">{f.title}</h3>
                 <p className="mt-1.5 text-sm text-ink-soft">{f.body}</p>
+                <span className="pointer-events-none absolute inset-x-0 bottom-0 h-px origin-left scale-x-0 bg-accent transition-transform duration-300 group-hover:scale-x-100" />
               </m.div>
             ))}
           </div>
@@ -159,8 +194,9 @@ export function LandingPage() {
                 <m.div
                   className="mt-3 h-px origin-left bg-line-strong"
                   initial={reduced ? undefined : { scaleX: 0 }}
-                  animate={reduced ? undefined : { scaleX: 1 }}
-                  transition={{ duration: 0.6, delay: 0.25 + i * 0.12, ease: EASE }}
+                  whileInView={reduced ? undefined : { scaleX: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: 0.15 + i * 0.12, ease: EASE }}
                 />
                 <h3 className="mt-3 font-display text-lg">{s.title}</h3>
                 <p className="mt-1.5 text-sm text-ink-soft">{s.body}</p>
@@ -170,20 +206,23 @@ export function LandingPage() {
         </section>
 
         {/* ── Closing CTA ──────────────────────────────────────── */}
-        <section className="bg-ink text-paper">
+        <section className="relative overflow-hidden bg-ink text-paper">
+          <div className="paper-grain absolute inset-0 opacity-[0.06]" aria-hidden />
           <m.div
             {...rise()}
-            className="mx-auto flex max-w-4xl flex-col items-center gap-6 px-4 py-16 text-center sm:px-6"
+            className="relative mx-auto flex max-w-4xl flex-col items-center gap-6 px-4 py-20 text-center sm:px-6"
           >
-            <h2 className="font-display text-3xl text-paper sm:text-4xl">
+            <h2 className="font-display text-3xl text-paper sm:text-[2.6rem]">
               Your next transcript is one paste away.
             </h2>
-            <button
-              onClick={scrollToComposer}
-              className="inline-flex h-12 items-center gap-2 rounded-full bg-accent px-6 text-[0.95rem] font-medium text-[var(--color-accent-ink)] transition-colors hover:bg-accent-hover active:scale-[0.98]"
-            >
-              Start transcribing
-            </button>
+            <Magnetic strength={0.4}>
+              <button
+                onClick={goToComposer}
+                className="inline-flex h-12 items-center gap-2 rounded-full bg-accent px-6 text-[0.95rem] font-medium text-[var(--color-accent-ink)] transition-colors hover:bg-accent-hover active:scale-[0.98]"
+              >
+                Start transcribing
+              </button>
+            </Magnetic>
           </m.div>
         </section>
       </div>

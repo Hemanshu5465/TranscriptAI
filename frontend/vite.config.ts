@@ -12,7 +12,7 @@ export default defineConfig({
       output: {
         advancedChunks: {
           groups: [
-            { name: "motion", test: /[\\/]node_modules[\\/]motion[\\/]/ },
+            { name: "motion", test: /[\\/]node_modules[\\/](motion|lenis)[\\/]/ },
             {
               name: "react-vendor",
               test: /[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/,

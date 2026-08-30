@@ -32,19 +32,19 @@ const LINES = [
   { at: 20, text: "Search, edit, export — the words never change." },
 ];
 
-export function TranscriptDemo() {
+export function TranscriptDemo({ paused = false }: { paused?: boolean }) {
   const reduced = useReducedMotion();
   const progress = useMotionValue(reduced ? 1 : 0);
 
   useEffect(() => {
-    if (reduced) return;
-    const controls = animate(progress, 1, {
+    if (reduced || paused) return;
+    const controls = animate(progress, [0, 1], {
       duration: LOOP_SECONDS,
       ease: "linear",
       repeat: Infinity,
     });
     return () => controls.stop();
-  }, [reduced, progress]);
+  }, [reduced, paused, progress]);
 
   const playX = useTransform(progress, [0, SPAN / CLIP, 1], ["0%", "100%", "100%"]);
   const clock = useTransform(progress, (p) => hhmmss(Math.min(SPAN, p * CLIP)));
@@ -56,8 +56,18 @@ export function TranscriptDemo() {
       className="paper-grain select-none rounded-2xl border border-line-strong bg-surface p-4 shadow-[0_28px_70px_-28px_rgba(20,18,12,0.4)] sm:p-5"
     >
       <div className="flex items-center gap-3">
-        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-accent text-[var(--color-accent-ink)]">
+        <span className="relative grid size-7 shrink-0 place-items-center rounded-full bg-accent text-[var(--color-accent-ink)]">
           <Play className="size-3 translate-x-px fill-current" />
+          {!reduced &&
+            [0, 1].map((i) => (
+              <m.span
+                key={i}
+                aria-hidden
+                className="absolute inset-0 rounded-full border border-accent"
+                animate={{ scale: [1, 2.7], opacity: [0.5, 0] }}
+                transition={{ duration: 2.6, repeat: Infinity, delay: i * 1.3, ease: "easeOut" }}
+              />
+            ))}
         </span>
         <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-surface-sunken">
           <m.div

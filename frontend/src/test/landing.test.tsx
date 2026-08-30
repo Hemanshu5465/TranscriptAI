@@ -14,7 +14,7 @@ function renderLanding() {
 describe("LandingPage", () => {
   it("renders the headline, the composer and every feature", () => {
     renderLanding();
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Turn any video into a script");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(/Turn any video\s*into a script/);
     expect(screen.getByLabelText(/youtube video url/i)).toBeInTheDocument();
     expect(screen.getByText("Timestamped segments")).toBeInTheDocument();
     expect(screen.getByText("Word-for-word, never a summary")).toBeInTheDocument();

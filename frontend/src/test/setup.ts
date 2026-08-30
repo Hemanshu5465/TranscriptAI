@@ -18,6 +18,17 @@ if (typeof window.IntersectionObserver === "undefined") {
   globalThis.IntersectionObserver = ctor;
 }
 
+// jsdom lacks ResizeObserver (Lenis / motion measurement paths touch it)
+if (typeof window.ResizeObserver === "undefined") {
+  class RO {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  window.ResizeObserver = RO as unknown as typeof window.ResizeObserver;
+  globalThis.ResizeObserver = RO as unknown as typeof globalThis.ResizeObserver;
+}
+
 // jsdom lacks matchMedia
 if (!window.matchMedia) {
   window.matchMedia = ((query: string) => ({

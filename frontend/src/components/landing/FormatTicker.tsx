@@ -1,4 +1,4 @@
-import { m, useReducedMotion } from "motion/react";
+import { m, useReducedMotion, useScroll, useSpring, useTransform, useVelocity } from "motion/react";
 
 const FORMATS = ["TXT", "DOCX", "PDF", "SRT", "VTT", "JSON", "CSV"];
 
@@ -17,6 +17,13 @@ function Row() {
 
 export function FormatTicker() {
   const reduced = useReducedMotion();
+  const { scrollY } = useScroll();
+  const velocity = useVelocity(scrollY);
+  // Scrolling skews the strip; it settles back level.
+  const skew = useSpring(useTransform(velocity, [-2000, 0, 2000], [-7, 0, 7]), {
+    damping: 40,
+    stiffness: 300,
+  });
 
   if (reduced) {
     return (
@@ -39,9 +46,9 @@ export function FormatTicker() {
       <span className="pointer-events-none absolute right-0 top-0 z-10 h-full w-20 bg-gradient-to-l from-paper to-transparent" />
       <m.div
         className="flex"
-        style={{ willChange: "transform" }}
+        style={{ skewX: skew, willChange: "transform" }}
         animate={{ x: ["0%", "-50%"] }}
-        transition={{ duration: 24, ease: "linear", repeat: Infinity }}
+        transition={{ duration: 22, ease: "linear", repeat: Infinity }}
       >
         <Row />
         <Row />
