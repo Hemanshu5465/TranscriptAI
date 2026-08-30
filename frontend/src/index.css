@@ -117,6 +117,20 @@
     border: 1px solid var(--color-line);
     border-radius: var(--radius-xl);
   }
+  /* Warm, low-contrast light wash behind the landing hero */
+  .hero-wash {
+    background:
+      radial-gradient(
+        62% 52% at 50% -8%,
+        color-mix(in oklab, var(--color-accent) 11%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        38% 40% at 88% 6%,
+        color-mix(in oklab, var(--color-accent) 6%, transparent),
+        transparent 72%
+      );
+  }
   .rule-hairline {
     border-color: color-mix(in oklab, var(--color-line) 70%, transparent);
   }

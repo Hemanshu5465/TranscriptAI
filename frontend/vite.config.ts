@@ -6,6 +6,23 @@ const API_TARGET = process.env.VITE_API_PROXY ?? "http://localhost:8899";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    chunkSizeWarningLimit: 700,
+    rollupOptions: {
+      output: {
+        advancedChunks: {
+          groups: [
+            { name: "motion", test: /[\\/]node_modules[\\/]motion[\\/]/ },
+            {
+              name: "react-vendor",
+              test: /[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/,
+            },
+            { name: "query", test: /[\\/]node_modules[\\/]@tanstack[\\/]/ },
+          ],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {

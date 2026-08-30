@@ -1,6 +1,13 @@
 import { FileText, Languages, Pencil, Search, ShieldCheck, Timer } from "lucide-react";
+import { LazyMotion, domAnimation, m, useReducedMotion } from "motion/react";
 import { UrlComposer } from "../components/UrlComposer";
 import { RecordDot } from "../components/Brand";
+import { TranscriptDemo } from "../components/landing/TranscriptDemo";
+import { FormatTicker } from "../components/landing/FormatTicker";
+
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+const HEAD_WORDS = ["Turn", "any", "video", "into", "a", "script"];
 
 const FEATURES = [
   { icon: Timer, title: "Timestamped segments", body: "Every line is anchored to the moment it was spoken. Click to jump the video." },
@@ -11,42 +18,175 @@ const FEATURES = [
   { icon: ShieldCheck, title: "Word-for-word, never a summary", body: "Formatting restores punctuation and paragraphs — it never rewrites meaning." },
 ];
 
+const STEPS = [
+  { n: "01", title: "Paste a link or file", body: "A YouTube URL, or an uploaded video / audio file up to 1 GB." },
+  { n: "02", title: "We transcribe it", body: "Speech recognition with punctuation, paragraphs and per-word timing." },
+  { n: "03", title: "Edit & export", body: "Fix a word if you need to, then download it in any of seven formats." },
+];
+
+function scrollToComposer() {
+  const el = document.getElementById("start");
+  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  el?.querySelector<HTMLInputElement>('input:not([type="file"])')?.focus({ preventScroll: true });
+}
+
 export function LandingPage() {
+  const reduced = useReducedMotion();
+
+  // Mount-time reveals (not scroll-gated) — the page is short, and this keeps
+  // every section visible even if IntersectionObserver never fires.
+  const rise = (delay = 0) =>
+    reduced
+      ? {}
+      : {
+          initial: { opacity: 0, y: 18 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.55, delay, ease: EASE },
+        };
+
+  const cue = (delay: number) =>
+    reduced
+      ? {}
+      : {
+          initial: { opacity: 0, y: 14 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.5, delay, ease: EASE },
+        };
+
   return (
-    <div className="paper-grain">
-      <section className="mx-auto max-w-3xl px-4 pb-16 pt-16 text-center sm:pt-24">
-        <p className="animate-rise mb-6 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-xs text-ink-soft">
-          <RecordDot /> Accurate transcription for creators & researchers
-        </p>
-        <h1 className="animate-rise text-balance font-display text-4xl leading-[1.05] tracking-tight sm:text-6xl" style={{ animationDelay: "60ms" }}>
-          Turn any YouTube video into a script
-        </h1>
-        <p className="animate-rise mx-auto mt-5 max-w-xl text-pretty text-lg text-ink-soft" style={{ animationDelay: "120ms" }}>
-          Paste a YouTube URL and generate an accurate, searchable, timestamped transcript in
-          seconds.
-        </p>
+    <LazyMotion features={domAnimation}>
+      <div className="overflow-x-clip">
+        {/* ── Hero ─────────────────────────────────────────────── */}
+        <section className="paper-grain relative">
+          <div className="hero-wash pointer-events-none absolute inset-0 -z-10" aria-hidden />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -left-4 top-10 -z-10 select-none font-display text-[13rem] leading-none text-ink/[0.035] sm:-left-8 sm:text-[22rem]"
+          >
+            &ldquo;
+          </span>
 
-        <div className="animate-rise mt-9" style={{ animationDelay: "180ms" }}>
-          <UrlComposer autoFocus />
-        </div>
+          <div className="mx-auto grid max-w-6xl gap-12 px-4 pb-16 pt-16 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-10 lg:pt-24">
+            <div id="start" className="text-center lg:text-left">
+              <m.p
+                {...cue(0)}
+                className="mb-6 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-xs text-ink-soft"
+              >
+                <RecordDot /> Accurate transcription for creators &amp; researchers
+              </m.p>
 
-        <p className="animate-rise mt-4 break-words text-xs text-ink-faint" style={{ animationDelay: "220ms" }}>
-          Example: https://www.youtube.com/watch?v=dQw4w9WgXcQ · Only transcribe content you are
-          authorized to process.
-        </p>
-      </section>
+              <h1 className="text-balance font-display text-[2.6rem] leading-[1.04] tracking-tight sm:text-6xl">
+                {HEAD_WORDS.map((w, i) => (
+                  <m.span key={i} {...cue(0.05 * (i + 1))} className="inline-block">
+                    {w}&nbsp;
+                  </m.span>
+                ))}
+              </h1>
 
-      <section className="mx-auto max-w-5xl px-4 pb-24 sm:px-6">
-        <div className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((f) => (
-            <div key={f.title} className="bg-surface p-6">
-              <f.icon className="size-5 text-accent" />
-              <h3 className="mt-3 font-display text-lg">{f.title}</h3>
-              <p className="mt-1.5 text-sm text-ink-soft">{f.body}</p>
+              <m.p
+                {...cue(0.05 * (HEAD_WORDS.length + 1))}
+                className="mx-auto mt-5 max-w-xl text-pretty text-lg text-ink-soft lg:mx-0"
+              >
+                Paste a YouTube URL or upload a file and generate an accurate, searchable,
+                timestamped transcript in seconds.
+              </m.p>
+
+              <m.div {...cue(0.05 * (HEAD_WORDS.length + 2))} className="mt-8">
+                <UrlComposer autoFocus />
+              </m.div>
+
+              <m.p
+                {...cue(0.05 * (HEAD_WORDS.length + 3))}
+                className="mt-4 break-words text-xs text-ink-faint"
+              >
+                Example: youtube.com/watch?v=dQw4w9WgXcQ · Only transcribe content you are
+                authorized to process.
+              </m.p>
             </div>
-          ))}
+
+            <m.div
+              className="hidden md:block"
+              initial={reduced ? undefined : { opacity: 0, y: 26, rotate: -3.5 }}
+              animate={reduced ? undefined : { opacity: 1, y: 0, rotate: -1.5 }}
+              transition={{ duration: 0.75, delay: 0.25, ease: EASE }}
+            >
+              <TranscriptDemo />
+            </m.div>
+          </div>
+        </section>
+
+        {/* ── Format ticker ────────────────────────────────────── */}
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <FormatTicker />
         </div>
-      </section>
-    </div>
+
+        {/* ── Features ─────────────────────────────────────────── */}
+        <section className="mx-auto max-w-5xl px-4 py-20 sm:px-6">
+          <m.h2 {...rise()} className="font-display text-2xl sm:text-3xl">
+            Everything in one place
+          </m.h2>
+          <m.p {...rise(0.05)} className="mt-2 max-w-lg text-ink-soft">
+            From raw speech to a polished, exportable script — without ever rewriting what
+            was said.
+          </m.p>
+
+          <div className="mt-8 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map((f, i) => (
+              <m.div
+                key={f.title}
+                initial={reduced ? undefined : { opacity: 0, y: 20 }}
+                animate={reduced ? undefined : { opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.15 + i * 0.06, ease: EASE }}
+                className="group relative bg-surface p-6 transition-colors hover:bg-surface-sunken"
+              >
+                <span className="font-mono text-[0.7rem] text-ink-faint">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <f.icon className="mt-3 size-5 text-accent transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110" />
+                <h3 className="mt-3 font-display text-lg">{f.title}</h3>
+                <p className="mt-1.5 text-sm text-ink-soft">{f.body}</p>
+              </m.div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── How it works ─────────────────────────────────────── */}
+        <section className="mx-auto max-w-5xl px-4 pb-20 sm:px-6">
+          <div className="grid gap-8 sm:grid-cols-3">
+            {STEPS.map((s, i) => (
+              <m.div key={s.n} {...rise(i * 0.08)} className="relative">
+                <div className="font-display text-4xl text-accent">{s.n}</div>
+                <m.div
+                  className="mt-3 h-px origin-left bg-line-strong"
+                  initial={reduced ? undefined : { scaleX: 0 }}
+                  animate={reduced ? undefined : { scaleX: 1 }}
+                  transition={{ duration: 0.6, delay: 0.25 + i * 0.12, ease: EASE }}
+                />
+                <h3 className="mt-3 font-display text-lg">{s.title}</h3>
+                <p className="mt-1.5 text-sm text-ink-soft">{s.body}</p>
+              </m.div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Closing CTA ──────────────────────────────────────── */}
+        <section className="bg-ink text-paper">
+          <m.div
+            {...rise()}
+            className="mx-auto flex max-w-4xl flex-col items-center gap-6 px-4 py-16 text-center sm:px-6"
+          >
+            <h2 className="font-display text-3xl text-paper sm:text-4xl">
+              Your next transcript is one paste away.
+            </h2>
+            <button
+              onClick={scrollToComposer}
+              className="inline-flex h-12 items-center gap-2 rounded-full bg-accent px-6 text-[0.95rem] font-medium text-[var(--color-accent-ink)] transition-colors hover:bg-accent-hover active:scale-[0.98]"
+            >
+              Start transcribing
+            </button>
+          </m.div>
+        </section>
+      </div>
+    </LazyMotion>
   );
 }
