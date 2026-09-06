@@ -8,8 +8,9 @@ from sqlalchemy import func, or_, select
 
 from app.core.deps import CurrentUser, DbSession, OptionalUser
 from app.core.rate_limit import limiter
+from app.core.security import decode_access_token
 from app.config.settings import settings
-from app.models import Transcript, Video
+from app.models import Transcript, User, Video
 from app.schemas.transcript import (
     JobStatusOut,
     TranscriptCreate,
@@ -157,7 +158,18 @@ def export_transcript(
     format: Annotated[str, Query()] = "txt",
     timestamps: Annotated[bool, Query()] = True,
     variant: Annotated[Literal["clean", "raw", "edited"], Query()] = "clean",
+    access_token: Annotated[str | None, Query()] = None,
 ) -> Response:
+    # Downloads are plain browser navigations (so they don't depend on a JS fetch
+    # keeping user-activation alive across a slow request) — accept the JWT via a
+    # query param when the Authorization header isn't present.
+    if user is None and access_token:
+        payload = decode_access_token(access_token)
+        if payload and payload.get("type") == "access":
+            candidate = db.get(User, payload.get("sub"))
+            if candidate is not None and candidate.is_active:
+                user = candidate
+
     fmt = format.lower()
     if fmt not in SUPPORTED_FORMATS:
         return Response(

@@ -125,3 +125,31 @@ def test_edit_and_export(client, fake_pipeline):
         f"/api/v1/transcripts/{job_id}/export", params={"format": "txt", "variant": "edited"}
     )
     assert b"EDITED FIRST LINE." in edited_txt.content
+
+
+def test_export_owned_transcript_via_query_token(auth_client, client, fake_pipeline):
+    token = auth_client.headers["Authorization"].split()[1]
+    job_id = auth_client.post(
+        "/api/v1/transcripts", json={"youtube_url": VIDEO_URL}
+    ).json()["job_id"]
+
+    # A plain browser navigation carries no Authorization header — the JWT rides
+    # in the query string instead.
+    del client.headers["Authorization"]
+
+    forbidden = client.get(f"/api/v1/transcripts/{job_id}/export", params={"format": "txt"})
+    assert forbidden.status_code == 403
+
+    ok = client.get(
+        f"/api/v1/transcripts/{job_id}/export",
+        params={"format": "txt", "access_token": token},
+    )
+    assert ok.status_code == 200
+    assert len(ok.content) > 0
+    assert ok.headers["content-disposition"].startswith("attachment;")
+
+    bad = client.get(
+        f"/api/v1/transcripts/{job_id}/export",
+        params={"format": "txt", "access_token": "not-a-jwt"},
+    )
+    assert bad.status_code == 403

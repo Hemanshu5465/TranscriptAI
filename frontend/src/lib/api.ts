@@ -92,23 +92,22 @@ export const transcriptApi = {
     const p = new URLSearchParams({ format });
     if (opts?.timestamps === false) p.set("timestamps", "false");
     if (opts?.variant) p.set("variant", opts.variant);
+    const token = getToken();
+    if (token) p.set("access_token", token);
     return `/api/v1/transcripts/${id}/export?${p.toString()}`;
   },
-  downloadExport: async (id: string, format: string, opts?: { timestamps?: boolean; variant?: string }) => {
-    const res = await api.get(transcriptApi.exportUrl(id, format, opts).replace("/api/v1", ""), {
-      responseType: "blob",
-    });
-    const disposition = res.headers["content-disposition"] as string | undefined;
-    const match = disposition?.match(/filename="?([^"]+)"?/);
-    const filename = match?.[1] ?? `transcript.${format}`;
-    const blobUrl = URL.createObjectURL(res.data as Blob);
+  // A plain, synchronous navigation download. Doing it inline in the click
+  // handler (no `await` first) keeps the browser's user-activation intact, so
+  // the download isn't silently dropped when the request is slow (cold starts).
+  downloadExport: (id: string, format: string, opts?: { timestamps?: boolean; variant?: string }) => {
     const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = filename;
+    a.href = transcriptApi.exportUrl(id, format, opts);
+    a.download = "";
+    a.rel = "noopener";
     document.body.appendChild(a);
     a.click();
     a.remove();
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+    return Promise.resolve();
   },
 };
 
