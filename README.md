@@ -314,7 +314,8 @@ to process.
 
 ---
 
-## How wording is preserved
+## How wording is preserved Supdata - API for you tube  / deepgram api  - for video  /  vercel  / databse = vercel / database github 
+
 
 The formatter's contract (enforced in the prompt and the rule-based heuristics):
 
@@ -326,3 +327,11 @@ Every transcript keeps three layers: **raw** (exactly what the STT/caption sourc
 produced), **clean** (formatted), and **edited** (your changes). You can switch
 between raw and clean at any time and export any of them. Unclear audio is left
 as `[inaudible]` / low-confidence rather than guessed.
+
+
+
+
+
+
+ 
+
