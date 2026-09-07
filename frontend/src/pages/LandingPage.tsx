@@ -11,6 +11,7 @@ import {
 import { UrlComposer } from "../components/UrlComposer";
 import { RecordDot } from "../components/Brand";
 import { SplitFlapBoard } from "../components/landing/SplitFlapBoard";
+import { CosmosCanvas } from "../components/landing/CosmosCanvas";
 import { FormatTicker } from "../components/landing/FormatTicker";
 import { Magnetic } from "../components/landing/Magnetic";
 import { useLenis } from "../hooks/useLenis";
@@ -89,47 +90,60 @@ export function LandingPage() {
       </m.div>
 
       <div className="overflow-x-clip">
-        {/* ── Hero ─────────────────────────────────────────────── */}
-        <section className="paper-grain relative">
+        {/* ── Hero — warm cosmos ───────────────────────────────── */}
+        <section className="relative isolate flex min-h-[86svh] flex-col overflow-hidden bg-[#130f0a] text-[#f3ecdf]">
+          <CosmosCanvas />
+
           <span
             aria-hidden
-            className="pointer-events-none absolute -left-4 top-8 -z-10 select-none font-display text-[13rem] leading-none text-ink/[0.035] sm:-left-8 sm:text-[22rem]"
+            className="pointer-events-none absolute left-1 top-[30%] hidden -translate-y-1/2 select-none font-display text-[7.5vw] leading-none text-white/[0.055] xl:block"
           >
-            &ldquo;
+            Transcript
+          </span>
+          <span
+            aria-hidden
+            className="pointer-events-none absolute right-3 top-[30%] hidden -translate-y-1/2 select-none font-display text-[7.5vw] leading-none text-white/[0.055] xl:block"
+          >
+            AI
           </span>
 
           <div
             id="start"
-            className="mx-auto max-w-3xl px-4 pb-16 pt-16 text-center sm:px-6 sm:pt-24"
+            className="relative z-10 mx-auto flex max-w-3xl flex-col items-center px-4 pb-28 pt-[23vh] text-center sm:px-6"
           >
             <m.p
               {...cue(0)}
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-xs text-ink-soft"
+              className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-xs text-white/70 backdrop-blur-sm"
             >
               <RecordDot /> Accurate transcription for creators &amp; researchers
             </m.p>
 
             <m.h1
               {...cue(0.08)}
-              className="text-balance font-display text-[2.7rem] leading-[1.06] tracking-tight sm:text-6xl"
+              className="text-balance font-display text-[2.7rem] leading-[1.05] tracking-tight text-white sm:text-6xl [text-shadow:0_2px_40px_rgba(0,0,0,0.5)]"
             >
               Turn any video into a script
             </m.h1>
 
-            <m.p {...cue(0.16)} className="mx-auto mt-5 max-w-xl text-pretty text-lg text-ink-soft">
+            <m.p {...cue(0.16)} className="mx-auto mt-5 max-w-xl text-pretty text-lg text-white/65">
               Paste a YouTube URL or upload a file and generate an accurate, searchable,
               timestamped transcript in seconds.
             </m.p>
 
-            <m.div {...cue(0.24)} className="mt-9">
+            <m.div {...cue(0.24)} className="mt-9 w-full">
               <UrlComposer autoFocus />
             </m.div>
 
-            <m.p {...cue(0.3)} className="mt-4 break-words text-xs text-ink-faint">
+            <m.p {...cue(0.3)} className="mt-4 break-words text-xs text-white/40">
               Example: youtube.com/watch?v=dQw4w9WgXcQ · Only transcribe content you are
               authorized to process.
             </m.p>
           </div>
+
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-[var(--color-surface-sunken)]"
+          />
         </section>
 
         {/* ── Split-flap showcase ──────────────────────────────── */}
