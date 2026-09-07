@@ -140,9 +140,10 @@ export function LandingPage() {
             </m.p>
           </div>
 
+          {/* deepen into space toward the bottom, then a clean cut to the band below */}
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-[var(--color-surface-sunken)]"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-gradient-to-b from-transparent via-[#0f0b07] to-[#0b0805]"
           />
         </section>
 
