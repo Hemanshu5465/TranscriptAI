@@ -90,7 +90,7 @@ export function LandingPage() {
 
       <div className="overflow-x-clip">
         {/* ── Hero — warm cosmos ───────────────────────────────── */}
-        <section className="relative isolate flex min-h-[86svh] flex-col overflow-hidden bg-[#130f0a] text-[#f3ecdf]">
+        <section className="relative isolate flex min-h-[100svh] flex-col overflow-hidden bg-[#130f0a] text-[#f3ecdf]">
           <CosmosCanvas />
 
           <span
@@ -140,7 +140,7 @@ export function LandingPage() {
         </section>
 
         {/* ── Split-flap showcase ──────────────────────────────── */}
-        <section className="relative overflow-hidden border-y border-line bg-surface-sunken py-16 sm:py-24">
+        <section className="relative overflow-hidden border-b border-line bg-surface-sunken py-16 sm:py-24">
           <div
             aria-hidden
             className="pointer-events-none absolute left-1/2 top-1/2 h-[360px] w-[760px] max-w-[110vw] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
