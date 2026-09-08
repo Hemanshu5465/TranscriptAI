@@ -36,9 +36,10 @@ function makeSprite(rgbaPrefix: string): HTMLCanvasElement {
   return c;
 }
 
-export function CosmosCanvas() {
+export function CosmosCanvas({ variant = "hero" }: { variant?: "hero" | "cta" }) {
   const reduced = useReducedMotion();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isCta = variant === "cta";
 
   useEffect(() => {
     if (reduced) return;
@@ -54,8 +55,8 @@ export function CosmosCanvas() {
 
       const sprites = TINTS.map((t) => makeSprite(t));
       const small = window.matchMedia("(max-width: 768px)").matches;
-      const GALAXY_N = small ? 2400 : 6200;
-      const ORB_N = small ? 1300 : 3000;
+      const GALAXY_N = isCta ? 0 : small ? 2400 : 6200;
+      const ORB_N = isCta ? (small ? 900 : 1900) : small ? 1300 : 3000;
       const ARMS = 3;
 
       const pickTint = (): 0 | 1 | 2 => {
@@ -131,7 +132,8 @@ export function CosmosCanvas() {
       window.addEventListener("mousemove", onMove, { passive: true });
 
       const ORB_CX = 0.5;
-      const ORB_CY = 0.27;
+      const ORB_CY = isCta ? 0.42 : 0.27;
+      const ORB_SCALE = isCta ? 0.8 : 1;
       const BASE_TILT = 1.02; // ~58°: view the galaxy disc at an angle, not edge-on
       let gRot = 0;
       let prev = performance.now();
@@ -155,6 +157,7 @@ export function CosmosCanvas() {
         ctx.globalCompositeOperation = "lighter";
 
         // ---- galaxy (centred on the orb, so the orb reads as the core) ----
+        if (galaxy.length) {
         const cx = W * 0.5;
         const cy = H * ORB_CY;
         const scaleG = Math.max(W, H) * 0.5;
@@ -188,11 +191,12 @@ export function CosmosCanvas() {
           ctx.globalAlpha = Math.min(0.8, persp * 0.44);
           ctx.drawImage(sprites[p.c], sx - size, sy - size, size * 2, size * 2);
         }
+        }
 
         // ---- orb ----
         const ocx = W * ORB_CX;
         const ocy = H * ORB_CY;
-        const oR = Math.min(W, H) * (0.155 + 0.012 * Math.sin(now * 0.0012));
+        const oR = Math.min(W, H) * (0.155 + 0.012 * Math.sin(now * 0.0012)) * ORB_SCALE;
         const rY = now * 0.00018 + (mouse.x - 0.5) * 0.5 * mouse.active;
         const rX = (mouse.y - 0.5) * 0.4 * mouse.active + Math.sin(now * 0.0003) * 0.14;
         const cY2 = Math.cos(rY);
@@ -234,7 +238,7 @@ export function CosmosCanvas() {
         // orb core bloom
         ctx.globalAlpha = 1;
         const bloom = ctx.createRadialGradient(ocx, ocy, 0, ocx, ocy, oR * 1.7);
-        bloom.addColorStop(0, "rgba(245,178,120,0.22)");
+        bloom.addColorStop(0, `rgba(245,178,120,${isCta ? 0.14 : 0.22})`);
         bloom.addColorStop(1, "rgba(245,178,120,0)");
         ctx.fillStyle = bloom;
         ctx.fillRect(ocx - oR * 2, ocy - oR * 2, oR * 4, oR * 4);
@@ -255,7 +259,7 @@ export function CosmosCanvas() {
     }
 
     return () => cleanup();
-  }, [reduced]);
+  }, [reduced, isCta]);
 
   if (reduced) {
     return (
@@ -263,8 +267,9 @@ export function CosmosCanvas() {
         aria-hidden
         className="pointer-events-none absolute inset-0"
         style={{
-          background:
-            "radial-gradient(120% 80% at 50% 30%, rgba(245,150,90,0.16), transparent 60%), radial-gradient(60% 50% at 50% 40%, rgba(245,180,120,0.14), transparent 70%)",
+          background: isCta
+            ? "radial-gradient(40% 60% at 50% 50%, rgba(245,178,120,0.12), transparent 70%)"
+            : "radial-gradient(120% 80% at 50% 30%, rgba(245,150,90,0.16), transparent 60%), radial-gradient(60% 50% at 50% 40%, rgba(245,180,120,0.14), transparent 70%)",
         }}
       />
     );

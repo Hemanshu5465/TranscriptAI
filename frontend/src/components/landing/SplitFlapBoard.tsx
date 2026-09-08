@@ -27,10 +27,14 @@ function fit(line: string): string {
   return " ".repeat(left) + s + " ".repeat(pad - left);
 }
 
+const NBSP = " ";
+const glyph = (ch: string) => (ch === " " ? NBSP : ch);
+
 function FlapCell({ target, delay, accent }: { target: string; delay: number; accent: boolean }) {
   const reduced = useReducedMotion();
   const [display, setDisplay] = useState(target);
-  const [flip, setFlip] = useState(false);
+  const [leaf, setLeaf] = useState<{ ch: string; k: number } | null>(null);
+  const keyRef = useRef(0);
   const timers = useRef<number[]>([]);
 
   useEffect(() => {
@@ -39,28 +43,25 @@ function FlapCell({ target, delay, accent }: { target: string; delay: number; ac
 
     if (reduced || target === display) {
       setDisplay(target);
+      setLeaf(null);
       return;
     }
 
     const steps = 3 + Math.floor(Math.random() * 3); // 3–5 flaps
+    let cur = display;
     let idx = Math.max(0, CHARSET.indexOf(display));
 
     for (let s = 1; s <= steps; s++) {
+      const next =
+        s === steps ? target : CHARSET[(idx = (idx + 1 + (s % 3)) % CHARSET.length)];
+      const from = cur;
+      cur = next;
       timers.current.push(
         window.setTimeout(() => {
-          setFlip(true);
-          timers.current.push(
-            window.setTimeout(() => {
-              if (s === steps) {
-                setDisplay(target);
-              } else {
-                idx = (idx + 1 + (s % 3)) % CHARSET.length;
-                setDisplay(CHARSET[idx]);
-              }
-              setFlip(false);
-            }, 28),
-          );
-        }, delay + s * 58),
+          setDisplay(next); // the new glyph is revealed behind the folding leaf
+          setLeaf({ ch: from, k: ++keyRef.current });
+          timers.current.push(window.setTimeout(() => setLeaf(null), 135));
+        }, delay + (s - 1) * 96),
       );
     }
 
@@ -73,10 +74,18 @@ function FlapCell({ target, delay, accent }: { target: string; delay: number; ac
   }, [target, reduced]);
 
   return (
-    <span className="flap-cell">
-      <span className={cn("flap-glyph", flip && "flap-glyph--flip", accent && "flap-glyph--accent")}>
-        {display === " " ? " " : display}
+    <span className={cn("flap-cell", accent && "flap-cell--accent")}>
+      <span className="flap-half flap-half--top">
+        <span className="flap-face">{glyph(display)}</span>
       </span>
+      <span className="flap-half flap-half--bottom">
+        <span className="flap-face">{glyph(display)}</span>
+      </span>
+      {leaf && (
+        <span key={leaf.k} className="flap-leaf">
+          <span className="flap-face">{glyph(leaf.ch)}</span>
+        </span>
+      )}
       <span className="flap-seam" />
     </span>
   );
@@ -111,10 +120,10 @@ export function SplitFlapBoard() {
     <div
       ref={ref}
       aria-hidden="true"
-      className="split-flap mx-auto max-w-[880px] select-none"
+      className="split-flap mx-auto max-w-[880px] select-none [perspective:1500px]"
       onClick={() => started && !reduced && setMi((v) => (v + 1) % MESSAGES.length)}
     >
-      <div className="relative rounded-[26px] border border-white/10 bg-[#1d1710] p-4 shadow-[0_50px_100px_-35px_rgba(20,18,12,0.6),0_0_0_1px_rgba(0,0,0,0.25)] sm:p-6">
+      <div className="split-flap-housing relative rounded-[26px] border border-white/10 bg-[#1d1710] p-4 shadow-[0_50px_100px_-35px_rgba(20,18,12,0.6),0_0_0_1px_rgba(0,0,0,0.25)] sm:p-6">
         {["left-3 top-3", "right-3 top-3", "left-3 bottom-3", "right-3 bottom-3"].map((pos) => (
           <span key={pos} className={`absolute ${pos} size-1.5 rounded-full bg-white/10`} />
         ))}

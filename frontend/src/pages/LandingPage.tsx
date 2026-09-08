@@ -11,6 +11,8 @@ import {
 import { UrlComposer } from "../components/UrlComposer";
 import { SplitFlapBoard } from "../components/landing/SplitFlapBoard";
 import { CosmosCanvas } from "../components/landing/CosmosCanvas";
+import { FeatureCard } from "../components/landing/FeatureCard";
+import { Parallax } from "../components/landing/Parallax";
 import { FormatTicker } from "../components/landing/FormatTicker";
 import { Magnetic } from "../components/landing/Magnetic";
 import { useLenis } from "../hooks/useLenis";
@@ -93,18 +95,18 @@ export function LandingPage() {
         <section className="relative isolate flex min-h-[100svh] flex-col overflow-hidden bg-[#130f0a] text-[#f3ecdf]">
           <CosmosCanvas />
 
-          <span
-            aria-hidden
-            className="pointer-events-none absolute left-1 top-[30%] hidden -translate-y-1/2 select-none font-display text-[7.5vw] leading-none text-white/[0.055] xl:block"
+          <Parallax
+            speed={0.45}
+            className="pointer-events-none absolute left-1 top-[22%] hidden select-none font-display text-[7.5vw] leading-none text-white/[0.055] xl:block"
           >
-            Transcript
-          </span>
-          <span
-            aria-hidden
-            className="pointer-events-none absolute right-3 top-[30%] hidden -translate-y-1/2 select-none font-display text-[7.5vw] leading-none text-white/[0.055] xl:block"
+            <span aria-hidden>Transcript</span>
+          </Parallax>
+          <Parallax
+            speed={0.62}
+            className="pointer-events-none absolute right-3 top-[24%] hidden select-none font-display text-[7.5vw] leading-none text-white/[0.055] xl:block"
           >
-            AI
-          </span>
+            <span aria-hidden>AI</span>
+          </Parallax>
 
           <div
             id="start"
@@ -141,14 +143,19 @@ export function LandingPage() {
 
         {/* ── Split-flap showcase ──────────────────────────────── */}
         <section className="relative overflow-hidden border-b border-line bg-surface-sunken py-16 sm:py-24">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute left-1/2 top-1/2 h-[360px] w-[760px] max-w-[110vw] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
-            style={{
-              background:
-                "radial-gradient(closest-side, color-mix(in oklab, var(--color-accent) 18%, transparent), transparent)",
-            }}
-          />
+          <Parallax
+            speed={0.35}
+            className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+          >
+            <div
+              aria-hidden
+              className="h-[360px] w-[760px] max-w-[110vw] rounded-full blur-3xl"
+              style={{
+                background:
+                  "radial-gradient(closest-side, color-mix(in oklab, var(--color-accent) 18%, transparent), transparent)",
+              }}
+            />
+          </Parallax>
           <div className="relative mx-auto max-w-[920px] px-4 text-center sm:px-6">
             <m.p
               {...rise()}
@@ -162,32 +169,22 @@ export function LandingPage() {
 
         {/* ── Features ─────────────────────────────────────────── */}
         <section className="mx-auto max-w-5xl px-4 py-20 sm:px-6">
-          <m.h2 {...rise()} className="font-display text-2xl sm:text-3xl">
-            Everything in one place
-          </m.h2>
-          <m.p {...rise(0.05)} className="mt-2 max-w-lg text-ink-soft">
-            From raw speech to a polished, exportable script — without ever rewriting what
-            was said.
-          </m.p>
+          <Parallax speed={0.16}>
+            <m.h2 {...rise()} className="font-display text-2xl sm:text-3xl">
+              Everything in one place
+            </m.h2>
+            <m.p {...rise(0.05)} className="mt-2 max-w-lg text-ink-soft">
+              From raw speech to a polished, exportable script — without ever rewriting what
+              was said.
+            </m.p>
+          </Parallax>
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div
+            className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            style={{ perspective: "1200px" }}
+          >
             {FEATURES.map((f, i) => (
-              <m.div
-                key={f.title}
-                initial={reduced ? undefined : { opacity: 0, y: 24 }}
-                whileInView={reduced ? undefined : { opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.4 }}
-                transition={{ duration: 0.5, delay: (i % 3) * 0.08, ease: EASE }}
-                className="group relative overflow-hidden rounded-xl border border-line bg-surface p-6 transition-colors hover:bg-surface-sunken"
-              >
-                <span className="font-mono text-[0.7rem] text-ink-faint">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <f.icon className="mt-3 size-5 text-accent transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110" />
-                <h3 className="mt-3 font-display text-lg">{f.title}</h3>
-                <p className="mt-1.5 text-sm text-ink-soft">{f.body}</p>
-                <span className="pointer-events-none absolute inset-x-0 bottom-0 h-px origin-left scale-x-0 bg-accent transition-transform duration-300 group-hover:scale-x-100" />
-              </m.div>
+              <FeatureCard key={f.title} icon={f.icon} index={i} title={f.title} body={f.body} />
             ))}
           </div>
         </section>
@@ -217,14 +214,14 @@ export function LandingPage() {
           <FormatTicker />
         </div>
 
-        {/* ── Closing CTA ──────────────────────────────────────── */}
-        <section className="relative overflow-hidden bg-ink text-paper">
-          <div className="paper-grain absolute inset-0 opacity-[0.06]" aria-hidden />
+        {/* ── Closing CTA — back to space ──────────────────────── */}
+        <section className="relative isolate overflow-hidden bg-[#130f0a] text-[#f3ecdf]">
+          <CosmosCanvas variant="cta" />
           <m.div
             {...rise()}
-            className="relative mx-auto flex max-w-4xl flex-col items-center gap-6 px-4 py-20 text-center sm:px-6"
+            className="relative z-10 mx-auto flex max-w-4xl flex-col items-center gap-6 px-4 py-28 text-center sm:px-6"
           >
-            <h2 className="font-display text-3xl text-paper sm:text-[2.6rem]">
+            <h2 className="font-display text-3xl text-white sm:text-[2.6rem] [text-shadow:0_2px_40px_rgba(0,0,0,0.5)]">
               Your next transcript is one paste away.
             </h2>
             <Magnetic strength={0.4}>

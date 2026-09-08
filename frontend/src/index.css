@@ -158,44 +158,96 @@
 }
 .animate-pulse-bar { animation: pulse-bar 1.6s ease-in-out infinite; }
 
-/* ─── Split-flap board (hero) ─────────────────────────────────── */
+/* ─── Split-flap board — a real two-half departure board ──────── */
+.split-flap-housing {
+  transform: rotateX(5deg);
+  transform-style: preserve-3d;
+}
 .flap-cell {
   position: relative;
-  display: grid;
-  place-items: center;
   width: 100%;
   aspect-ratio: 4 / 5;
   overflow: hidden;
   border-radius: 5px;
-  background: linear-gradient(#26201a, #1a150f);
   color: #f3ecdf;
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: clamp(0.78rem, 3.7vw, 2rem);
   line-height: 1;
+  perspective: 170px;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     inset 0 -5px 8px rgba(0, 0, 0, 0.5);
 }
-.flap-glyph {
-  display: block;
-  transform-origin: center top;
-  backface-visibility: hidden;
-  transition: transform 60ms cubic-bezier(0.4, 0.85, 0.35, 1.25);
-}
-.flap-glyph--flip {
-  transform: rotateX(-90deg);
-}
-.flap-glyph--accent {
+.flap-cell--accent {
   color: #f28f63;
+}
+.flap-half {
+  position: absolute;
+  inset-inline: 0;
+  height: 50%;
+  overflow: hidden;
+}
+.flap-half--top {
+  top: 0;
+  background: linear-gradient(#2a231b, #1d1710);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.55);
+}
+.flap-half--bottom {
+  bottom: 0;
+  background: linear-gradient(#221c15, #15100a);
+}
+.flap-face {
+  position: absolute;
+  inset-inline: 0;
+  height: 200%;
+  display: grid;
+  place-items: center;
+}
+.flap-half--top .flap-face,
+.flap-leaf .flap-face {
+  top: 0;
+}
+.flap-half--bottom .flap-face {
+  bottom: 0;
+}
+.flap-leaf {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 50%;
+  overflow: hidden;
+  transform-origin: 50% 100%;
+  background: linear-gradient(#2c251c, #1d1710);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.6);
+  animation: flap-fold 135ms cubic-bezier(0.36, 0, 0.66, 1) forwards;
+  will-change: transform;
+  z-index: 4;
+}
+.flap-leaf::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  opacity: 0;
+  animation: flap-shade 135ms ease-in forwards;
+}
+@keyframes flap-fold {
+  from { transform: rotateX(0deg); }
+  to { transform: rotateX(-90deg); }
+}
+@keyframes flap-shade {
+  from { opacity: 0; }
+  to { opacity: 0.75; }
 }
 .flap-seam {
   position: absolute;
   inset-inline: 0;
   top: 50%;
   height: 1px;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.5);
   pointer-events: none;
+  z-index: 5;
 }
 
 /* Lenis smooth scroll (mounted only on the landing route) */
