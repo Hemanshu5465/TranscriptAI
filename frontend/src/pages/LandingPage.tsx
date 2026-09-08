@@ -9,7 +9,6 @@ import {
   useTransform,
 } from "motion/react";
 import { UrlComposer } from "../components/UrlComposer";
-import { RecordDot } from "../components/Brand";
 import { SplitFlapBoard } from "../components/landing/SplitFlapBoard";
 import { CosmosCanvas } from "../components/landing/CosmosCanvas";
 import { FormatTicker } from "../components/landing/FormatTicker";
@@ -111,30 +110,23 @@ export function LandingPage() {
             id="start"
             className="relative z-10 mx-auto flex max-w-3xl flex-col items-center px-4 pb-28 pt-[23vh] text-center sm:px-6"
           >
-            <m.p
-              {...cue(0)}
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-xs text-white/70 backdrop-blur-sm"
-            >
-              <RecordDot /> Accurate transcription for creators &amp; researchers
-            </m.p>
-
             <m.h1
-              {...cue(0.08)}
+              {...cue(0)}
               className="text-balance font-display text-[2.7rem] leading-[1.05] tracking-tight text-white sm:text-6xl [text-shadow:0_2px_40px_rgba(0,0,0,0.5)]"
             >
               Turn any video into a script
             </m.h1>
 
-            <m.p {...cue(0.16)} className="mx-auto mt-5 max-w-xl text-pretty text-lg text-white/65">
+            <m.p {...cue(0.1)} className="mx-auto mt-5 max-w-xl text-pretty text-lg text-white/65">
               Paste a YouTube URL or upload a file and generate an accurate, searchable,
               timestamped transcript in seconds.
             </m.p>
 
-            <m.div {...cue(0.24)} className="mt-9 w-full">
+            <m.div {...cue(0.18)} className="mt-9 w-full">
               <UrlComposer autoFocus />
             </m.div>
 
-            <m.p {...cue(0.3)} className="mt-4 break-words text-xs text-white/40">
+            <m.p {...cue(0.24)} className="mt-4 break-words text-xs text-white/40">
               Example: youtube.com/watch?v=dQw4w9WgXcQ · Only transcribe content you are
               authorized to process.
             </m.p>
