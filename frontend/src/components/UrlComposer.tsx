@@ -8,6 +8,7 @@ import { ACCEPTED_EXTENSIONS, uploadTranscriptFile, validateFile } from "../lib/
 import { toast } from "../hooks/useToast";
 import type { AccuracyMode } from "../lib/types";
 import { cn } from "../lib/cn";
+import { useAuth } from "../store/auth";
 
 const MODES: { value: AccuracyMode; label: string; hint: string }[] = [
   { value: "exact", label: "Exact", hint: "Preserve detected words verbatim" },
@@ -100,10 +101,16 @@ function UrlForm({ autoFocus, mode, submitting, setSubmitting, navigate }: Share
   const [url, setUrl] = useState("");
   const [touched, setTouched] = useState(false);
   const invalid = touched && url.trim().length > 0 && !isValidYouTubeUrl(url);
+  const user = useAuth((s) => s.user);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setTouched(true);
+    if (!user) {
+      toast.error("Please create an account to generate a transcript.");
+      navigate("/register");
+      return;
+    }
     if (!isValidYouTubeUrl(url)) {
       toast.error("Please enter a valid YouTube URL.");
       return;
@@ -158,8 +165,14 @@ function UploadForm({ mode, submitting, setSubmitting, navigate }: SharedProps) 
   const [dragging, setDragging] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const user = useAuth((s) => s.user);
 
   async function handleFile(file: File) {
+    if (!user) {
+      toast.error("Please create an account to generate a transcript.");
+      navigate("/register");
+      return;
+    }
     const err = validateFile(file);
     if (err) {
       toast.error(err);
