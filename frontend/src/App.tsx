@@ -6,6 +6,7 @@ import { LandingPage } from "./pages/LandingPage";
 import { ProcessingPage } from "./pages/ProcessingPage";
 import { TranscriptPage } from "./pages/TranscriptPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { AdminPage } from "./pages/AdminPage";
 import { LoginPage, NotFoundPage, RegisterPage } from "./pages/AuthPages";
 import { Toaster } from "./components/Toaster";
 import { useAuth } from "./store/auth";
@@ -29,6 +30,7 @@ const router = createBrowserRouter([
       { path: "*", element: <NotFoundPage /> },
     ],
   },
+  { path: "/admin", element: <AdminPage /> },
 ]);
 
 export default function App() {

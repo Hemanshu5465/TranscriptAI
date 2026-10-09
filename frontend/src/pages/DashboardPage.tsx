@@ -21,8 +21,9 @@ const FILTERS = [
 ];
 
 export function DashboardPage() {
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const qc = useQueryClient();
+
   const [filter, setFilter] = useState("all");
   const [rawQuery, setRawQuery] = useState("");
   const q = useDebounce(rawQuery, 300);
@@ -52,8 +53,21 @@ export function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
-      <h1 className="font-display text-2xl">Your workspace</h1>
-      <p className="mt-1 text-sm text-ink-soft">Paste a link to start a new transcript.</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl">Your workspace</h1>
+          <p className="mt-1 text-sm text-ink-soft">Paste a link to start a new transcript.</p>
+        </div>
+        {user?.is_admin && (
+          <Link
+            to="/admin"
+            id="admin-panel-link"
+            className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink-soft hover:text-ink transition-colors"
+          >
+            ⚡ Admin Panel
+          </Link>
+        )}
+      </div>
 
       <div className="mt-5 rounded-2xl border border-line bg-surface p-4 sm:p-5">
         <UrlComposer />

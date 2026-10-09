@@ -116,4 +116,14 @@ export const adminApi = {
   jobs: (status = "all") => api.get("/admin/jobs", { params: { status } }).then((r) => r.data),
   retry: (id: string) => api.post(`/admin/jobs/${id}/retry`).then((r) => r.data),
   remove: (id: string) => api.delete(`/admin/jobs/${id}`),
+  users: (limit = 50, offset = 0) =>
+    api.get("/admin/users", { params: { limit, offset } }).then((r) => r.data),
+  userTranscripts: (userId: string) =>
+    api.get(`/admin/users/${userId}/transcripts`).then((r) => r.data),
+  userActivity: (userId: string) =>
+    api.get(`/admin/users/${userId}/activity`).then((r) => r.data),
+  toggleActive: (userId: string) =>
+    api.patch(`/admin/users/${userId}/toggle-active`).then((r) => r.data),
 };
+
+
